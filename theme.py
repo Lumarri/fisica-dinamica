@@ -1,7 +1,7 @@
 """Tema neumórfico nativo: superficies de doble sombra y controles con relieve."""
 from PySide6.QtCore import Qt, QRectF, QSize
 from PySide6.QtGui import QColor, QFont, QLinearGradient, QPainter, QPainterPath, QPalette, QPen, QPixmap
-from PySide6.QtWidgets import QFrame, QPushButton, QTabBar, QProxyStyle, QStyle, QSlider, QLabel
+from PySide6.QtWidgets import QFrame, QPushButton, QTabBar, QStyle, QSlider, QLabel
 from PySide6.QtGui import QFontDatabase, QIcon
 from pathlib import Path
 import re
@@ -75,6 +75,7 @@ QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal { width:0; }
 QSlider::groove:horizontal { height:7px; background:qlineargradient(x1:0,y1:0,x2:0,y2:1,stop:0 #0b1525,stop:1 #304a6b); border-radius:4px; }
 QSlider::handle:horizontal { width:19px; height:19px; margin:-7px 0; border:2px solid #304968; border-radius:11px; background:qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #304968,stop:.5 #1b2f4b,stop:1 #294a6d); }
 QSlider::handle:horizontal:hover { border-color:#87c7fa; }
+QCheckBox::indicator { width:16px; height:16px; border-radius:5px; border-top:1px solid #0b1423; border-left:1px solid #0b1423; border-bottom:1px solid #304969; border-right:1px solid #304969; background:qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #101e32,stop:1 #233a58); }
 QCheckBox { color:#b7c8e1; spacing:8px; }
 QToolBar { border:none; background:transparent; padding:3px; spacing:5px; }
 QToolButton { background:qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #253d5c,stop:1 #14253c); padding:5px; border-top:1px solid #2e4262; border-left:1px solid #2e4262; border-bottom:1px solid #101c2e; border-right:1px solid #101c2e; border-radius:7px; }
@@ -185,7 +186,7 @@ class NeoTabBar(QTabBar):
 
 def setup_style(app):
     load_fonts()
-    app.setStyle(NeoStyle());palette=QPalette()
+    app.setStyle('Fusion');palette=QPalette()
     roles={QPalette.ColorRole.Window:BASE,QPalette.ColorRole.WindowText:TEXT,
            QPalette.ColorRole.Base:'#14243b',QPalette.ColorRole.AlternateBase:'#203149',
            QPalette.ColorRole.Text:TEXT,QPalette.ColorRole.Button:BASE,
@@ -196,7 +197,8 @@ def setup_style(app):
     app.setPalette(palette);app.setFont(QFont('Space Grotesk',10))
     root=Path(__file__).resolve().parent/'assets'/'ui'
     arrows='QSpinBox::up-arrow,QDoubleSpinBox::up-arrow { image:url(\"'+(root/'chevron-up.svg').as_posix()+'\"); width:10px; height:8px; } QComboBox::down-arrow,QSpinBox::down-arrow,QDoubleSpinBox::down-arrow { image:url(\"'+(root/'chevron-down.svg').as_posix()+'\"); width:10px; height:8px; }'
-    app.setStyleSheet(STYLE+arrows)
+    checked='QCheckBox::indicator:checked { image:url(\"'+(root/'check.svg').as_posix()+'\"); }'
+    app.setStyleSheet(STYLE+arrows+checked)
 
 
 _fonts_ready=False
@@ -213,30 +215,6 @@ def load_fonts():
         if path.is_file():QFontDatabase.addApplicationFont(str(path))
     rcParams.update({'mathtext.fontset':'cm','axes.formatter.use_mathtext':True,'axes.unicode_minus':False})
     _fonts_ready=True
-
-
-class NeoStyle(QProxyStyle):
-    def __init__(self):super().__init__('Fusion')
-
-    def drawPrimitive(self,element,option,painter,widget=None):
-        arrows={QStyle.PrimitiveElement.PE_IndicatorArrowDown:'down',QStyle.PrimitiveElement.PE_IndicatorArrowUp:'up',
-                QStyle.PrimitiveElement.PE_IndicatorSpinDown:'down',QStyle.PrimitiveElement.PE_IndicatorSpinUp:'up'}
-        if element in arrows:
-            painter.save();painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-            painter.setPen(QPen(QColor(MUTED),1.6,Qt.PenStyle.SolidLine,Qt.PenCapStyle.RoundCap,Qt.PenJoinStyle.RoundJoin))
-            cx,cy=option.rect.center().x(),option.rect.center().y();sign=1 if arrows[element]=='down' else -1
-            path=QPainterPath();path.moveTo(cx-3,cy-sign*1.5);path.lineTo(cx,cy+sign*1.5);path.lineTo(cx+3,cy-sign*1.5)
-            painter.drawPath(path);painter.restore();return
-        if element==QStyle.PrimitiveElement.PE_IndicatorCheckBox:
-            painter.save();rect=QRectF(option.rect).adjusted(1,1,-1,-1)
-            checked=bool(option.state & QStyle.StateFlag.State_On)
-            surface(painter,rect,4,inset=True,active=checked)
-            if checked:
-                painter.setRenderHint(QPainter.RenderHint.Antialiasing);painter.setPen(QPen(QColor(ACCENT),1.8,Qt.PenStyle.SolidLine,Qt.PenCapStyle.RoundCap,Qt.PenJoinStyle.RoundJoin))
-                path=QPainterPath();path.moveTo(rect.left()+rect.width()*.2,rect.top()+rect.height()*.52);path.lineTo(rect.left()+rect.width()*.43,rect.top()+rect.height()*.74);path.lineTo(rect.left()+rect.width()*.83,rect.top()+rect.height()*.25)
-                painter.drawPath(path)
-            painter.restore();return
-        super().drawPrimitive(element,option,painter,widget)
 
 
 class NeoSlider(QSlider):

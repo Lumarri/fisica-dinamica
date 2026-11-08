@@ -18,7 +18,7 @@ if not exist ".venv\Scripts\python.exe" (
     py -3 -m venv .venv
     if errorlevel 1 goto error
 )
-".venv\Scripts\python.exe" -c "import PySide6, matplotlib, numpy, scipy, pandas" >nul 2>&1
+".venv\Scripts\python.exe" -c "import PySide6, matplotlib, numpy, scipy, pandas; from importlib.metadata import version; assert version('PySide6-Essentials') == '6.11.3'" >nul 2>&1
 if errorlevel 1 (
     echo Instalando las dependencias del programa. Esta primera vez necesita Internet.
     ".venv\Scripts\python.exe" -m pip install -r requirements.txt

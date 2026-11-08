@@ -95,6 +95,8 @@ El resultado es `dist\Dynamis.exe`. También puedes ejecutar `scripts/build_wind
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
+La interfaz utiliza PySide6/Qt 6.11.3, validado con Python 3.11. El iniciador de Windows actualiza esa dependencia si detecta otra versión.
+
 Se verifican soluciones e invariantes físicos: oscilación armónica, disipación, péndulos, tiro en vacío, período kepleriano, modos acoplados, campo eléctrico y magnético, energía de Rutherford, ley de semivida, cuatro-momento relativista y `R+T=1` en la barrera. También se prueban ejemplos, persistencia, compatibilidad de proyectos, tablas, exportaciones y los dibujos/fórmulas de los 15 modelos.
 
 El flujo de Windows construye el `.exe` y ejecuta la aplicación empaquetada con los 15 modelos, comprobando Qt, cálculos, figuras y capturas en modo `offscreen`. Guarda `verification.json`, capturas y versiones de dependencias en el artefacto.
