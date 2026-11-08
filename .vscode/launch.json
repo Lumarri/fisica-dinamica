@@ -2,14 +2,10 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Física: ejecutar interfaz",
+      "name": "Dynamis: programa de escritorio",
       "type": "debugpy",
       "request": "launch",
-      "module": "streamlit",
-      "args": [
-        "run",
-        "${workspaceFolder}/app.py"
-      ],
+      "program": "${workspaceFolder}/app.py",
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal",
       "justMyCode": true

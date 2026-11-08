@@ -1,0 +1,44 @@
+name: Build Windows desktop
+on:
+  push:
+    branches: [main]
+    paths:
+      - '**.py'
+      - '**.spec'
+      - 'requirements*.txt'
+      - '.github/workflows/windows.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    env:
+      QT_QPA_PLATFORM: offscreen
+      MPLCONFIGDIR: ${{ runner.temp }}/matplotlib
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-build.txt
+      - run: python -m pip install -r requirements-build.txt
+      - run: python -m unittest discover -s tests -v
+      - run: python -m PyInstaller --noconfirm --clean Dynamis.spec
+      - name: Verify the packaged application
+        shell: python
+        run: |
+          import subprocess
+          subprocess.run(['dist/Dynamis.exe', '--smoke-test', 'build-smoke'], check=True, timeout=120)
+      - run: python -m pip freeze > build-smoke/dependencies.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Dynamis-Windows-x64
+          path: |
+            dist/Dynamis.exe
+            build-smoke/
+          if-no-files-found: error
+          retention-days: 14
