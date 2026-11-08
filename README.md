@@ -30,7 +30,7 @@ También puedes abrir `Iniciar_Dynamis.bat`: crea el entorno si hace falta e ins
 
 Para depurar, selecciona el intérprete de `.venv` con **Python: Select Interpreter** y pulsa **F5 → Dynamis: programa de escritorio**. Si ya tenías la versión anterior, actualiza el repositorio e instala de nuevo `requirements.txt` en tu entorno.
 
-Linux y macOS también pueden ejecutar el código con un entorno virtual y `python app.py`; el ejecutable incluido en el flujo de compilación es específico de Windows.
+Linux y macOS también pueden ejecutar el código con un entorno virtual y `python app.py`; el ejecutable incluido en el flujo de compilación es específico de Windows. En Ubuntu/Debian, Qt requiere las bibliotecas del sistema `libegl1` y `libopengl0`. Solo se instala el paquete de Qt Essentials; no se usa Qt WebEngine.
 
 ## Qué puedes estudiar
 
