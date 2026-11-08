@@ -1,6 +1,6 @@
 # PyInstaller: ejecutable nativo autocontenido (compilar en Windows).
 a = Analysis(
-    ['app.py'], pathex=[], binaries=[], datas=[],
+    ['app.py'], pathex=[], binaries=[], datas=[('assets', 'assets')],
     hiddenimports=[], hookspath=[], hooksconfig={}, runtime_hooks=[],
     excludes=['streamlit', 'plotly', 'PyQt5', 'PyQt6', 'PySide2', 'tkinter'],
     noarchive=False,

@@ -2,7 +2,7 @@
 import html
 import numpy as np
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QKeySequence
+from PySide6.QtGui import QKeySequence,QFont
 from PySide6.QtWidgets import (QAbstractItemView,QApplication,QComboBox,QHBoxLayout,QLabel,QLineEdit,
                               QTableWidget,QTableWidgetItem,QTextBrowser,QVBoxLayout,QWidget)
 from catalog import MODELS, EXAMPLES
@@ -18,7 +18,8 @@ class CopyTable(QTableWidget):
         super().__init__(parent)
         self.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.setAlternatingRowColors(True)
-        self.setStyleSheet('QTableWidget { background:#101c2e; alternate-background-color:#142238; gridline-color:#2a3a51; } QHeaderView::section { background:#1b2c43; color:#c4d3e7; padding:6px; border:1px solid #2a3a51; }')
+        self.number_font=QFont("cmr10",12)
+        self.setStyleSheet('QTableWidget { background:#14243b; alternate-background-color:#1b2e48; color:#e2edfc; gridline-color:#2e4767; border-top:1px solid #0c1727; border-left:1px solid #0c1727; border-right:1px solid #2e4565; border-bottom:1px solid #2e4565; border-radius:12px; selection-background-color:#284c75; selection-color:#e6f1ff; }')
 
     def keyPressEvent(self,event):
         if event.matches(QKeySequence.StandardKey.Copy):
@@ -62,7 +63,9 @@ class DatasetPanel(QWidget):
         for row,values in enumerate(frame.head(maximum).itertuples(index=False,name=None)):
             for col,value in enumerate(values):
                 text=format(float(value),'.9g') if isinstance(value,(float,np.floating)) else str(value)
-                item=QTableWidgetItem(text);item.setToolTip(str(value));self.table.setItem(row,col,item)
+                item=QTableWidgetItem(text);item.setToolTip(str(value))
+                if isinstance(value,(int,float,np.number)):item.setFont(self.table.number_font)
+                self.table.setItem(row,col,item)
         self.table.resizeColumnsToContents();self.table.setUpdatesEnabled(True)
         self.caption.setText(f'{self.selector.currentText()} · {len(frame):,} filas · vista de las primeras {maximum:,}. Las unidades figuran en las columnas. CSV conserva 17 cifras significativas de float64.')
 
@@ -88,7 +91,7 @@ class GuidePanel(QTextBrowser):
             sections.append('</table>')
         sections.append('<h3>Ejemplos incluidos</h3><ul>'+''.join('<li><b>'+esc(ex.label)+'</b>: '+esc(ex.expected)+'</li>' for ex in EXAMPLES if ex.model==key)+'</ul>')
         sections.append('<h3>Referencias</h3><ul>'+''.join(f'<li><a href="{esc(url)}">{esc(label)}</a></li>' for label,url in spec.references)+'</ul>')
-        self.setHtml('<div style="color:#c4d3e7;line-height:1.4">'+''.join(sections)+'</div>')
+        self.setHtml('<div style="color:#c4d2e7;line-height:1.4">'+''.join(sections)+'</div>')
 
 
 class ParticlePanel(QWidget):
@@ -99,7 +102,7 @@ class ParticlePanel(QWidget):
         self.search=QLineEdit();self.search.setPlaceholderText('Buscar por nombre, familia, estructura o referencia…');box.addWidget(self.search)
         self.table=CopyTable();box.addWidget(self.table,1)
         refs=QTextBrowser();refs.setMaximumHeight(130);refs.setOpenExternalLinks(True)
-        refs.setHtml('<div style="color:#c4d3e7"><b>Unidades y alcance</b><br>1 MeV = 10⁶ eV; 1 fm = 10⁻¹⁵ m; c = 299792458 m/s exactamente en SI. '
+        refs.setHtml('<div style="color:#c4d2e7"><b>Unidades y alcance</b><br>1 MeV = 10⁶ eV; 1 fm = 10⁻¹⁵ m; c = 299792458 m/s exactamente en SI. '
             'Las especies de consulta no implican que todos sus procesos estén simulados. Quarks y gluones no se modelan como partículas libres. '
             'Los hadrones y núcleos son compuestos. No se tabulan aquí todos los hadrones ni sus canales.<br>'
             '<a href="https://pdg.lbl.gov/">Particle Data Group</a> · <a href="https://physics.nist.gov/cuu/Constants/">NIST / CODATA</a></div>')
@@ -113,8 +116,10 @@ class ParticlePanel(QWidget):
         for row,p in enumerate(records):
             lifetime=f'{p.lifetime:.7g}' if p.lifetime is not None else 'Sin decaimiento tabulado'
             if p.family=='Quark' and p.lifetime is None:lifetime='No se asigna aquí'
-            spin='½' if p.family in {'Leptón','Antileptón','Quark','Barión','Antibarión'} else '1' if p.family=='Bosón gauge' else '0'
+            spin='1/2' if p.family in {'Leptón','Antileptón','Quark','Barión','Antibarión'} else '1' if p.family=='Bosón gauge' else '0'
             values=[p.name,f'{p.mass_mev:.10g}' if p.mass_mev is not None else 'No fijada por sabor',f'{p.charge_e:.6g}',spin,lifetime,p.family,p.structure,p.source+(' · '+p.note if p.note else '')]
             for col,value in enumerate(values):
-                item=QTableWidgetItem(value);item.setToolTip(value);self.table.setItem(row,col,item)
+                item=QTableWidgetItem(value);item.setToolTip(value)
+                if col in {2,3} or (col==1 and p.mass_mev is not None) or (col==4 and p.lifetime is not None):item.setFont(self.table.number_font)
+                self.table.setItem(row,col,item)
         self.table.resizeColumnsToContents()

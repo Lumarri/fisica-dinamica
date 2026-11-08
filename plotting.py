@@ -1,35 +1,39 @@
 """Figuras nativas de Matplotlib; no navegador ni servidor HTTP."""
 import numpy as np
-from matplotlib import colormaps
+from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d.art3d import Line3DCollection
 from catalog import MODELS
+from matplotlib import rcParams
+rcParams.update({"mathtext.fontset":"cm", "axes.formatter.use_mathtext":True, "axes.unicode_minus":False})
 
-BG = "#111c2e"
-FG = "#e2eaf5"
-MUTED = "#8fa4bf"
-CYAN = "#57d9d0"
-BLUE = "#7aaaff"
-GOLD = "#efba6b"
+BG = "#18253a"
+FG = "#e2ecfb"
+MUTED = "#a3b6d1"
+CYAN = "#8ccafb"
+BLUE = "#879ff1"
+GOLD = "#e3b17e"
 
+
+NEO_CMAP = LinearSegmentedColormap.from_list("Dynamis", ["#91acff", "#82d0ee", "#74dfcc"])
 
 def style_axis(ax, three_d=False):
     ax.set_facecolor(BG)
-    ax.tick_params(colors=MUTED, labelsize=8)
+    ax.tick_params(colors=MUTED, labelsize=9, labelfontfamily="cmr10")
     ax.xaxis.label.set_color(MUTED)
     ax.yaxis.label.set_color(MUTED)
     ax.title.set_color(FG)
     if three_d:
         ax.zaxis.label.set_color(MUTED)
         for axis in [ax.xaxis, ax.yaxis, ax.zaxis]:
-            axis.pane.set_facecolor((.07, .12, .20, .55))
-            axis.pane.set_edgecolor((.23, .33, .46, .3))
-            axis._axinfo['grid']['color'] = (.35, .48, .65, .18)
+            axis.pane.set_facecolor((.10, .16, .25, .5))
+            axis.pane.set_edgecolor((.35, .48, .66, .3))
+            axis._axinfo['grid']['color'] = (.50, .61, .76, .22)
     else:
         for spine in ax.spines.values():
-            spine.set_color("#2b3c54")
-        ax.grid(color="#2b3c54", alpha=.5, linewidth=.6)
+            spine.set_color("#354f70")
+        ax.grid(color="#354f70", alpha=.5, linewidth=.6)
 
 
 class PlotCanvas(FigureCanvasQTAgg):
@@ -43,7 +47,7 @@ class SceneCanvas(PlotCanvas):
     def __init__(self):
         super().__init__(9, 6)
         self.figure.set_layout_engine(None)
-        self.figure.subplots_adjust(left=.04, right=.94, bottom=.12, top=.92)
+        self.figure.subplots_adjust(left=.04, right=.94, bottom=.20, top=.93)
         self.ax = None
         self.result = None
         self.marker = None
@@ -82,7 +86,7 @@ class SceneCanvas(PlotCanvas):
                     ax.plot(e["paths"][i], velocity, t, color=BLUE, alpha=.13, lw=.7)
         points = coords.reshape(-1, 1, 3)
         segments = np.concatenate([points[:-1], points[1:]], axis=1)
-        collection = Line3DCollection(segments, cmap="winter", linewidth=1.7, alpha=.95)
+        collection = Line3DCollection(segments, cmap=NEO_CMAP, linewidth=1.7, alpha=.95)
         collection.set_array(t[:-1])
         ax.add_collection3d(collection)
         self.coordinates = coords
@@ -98,9 +102,9 @@ class SceneCanvas(PlotCanvas):
             margin = max(float(hi-lo)*.08, .1)
             ranges.append((lo-margin, hi+margin))
         ax.set_xlim(*ranges[0]); ax.set_ylim(*ranges[1]); ax.set_zlim(*ranges[2])
-        ax.set_xlabel(labels[0], labelpad=8); ax.set_ylabel(labels[1], labelpad=8)
-        ax.set_zlabel(labels[2], labelpad=8)
-        ax.set_box_aspect((1, 1, .85), zoom=.9)
+        ax.set_xlabel(labels[0], labelpad=5); ax.set_ylabel(labels[1], labelpad=5)
+        ax.set_zlabel(labels[2], labelpad=5)
+        ax.set_box_aspect((1, 1, .85), zoom=1.03)
         self._draw_planes(ranges)
         self.marker, = ax.plot([coords[0, 0]], [coords[0, 1]], [coords[0, 2]],
                               marker="o", markersize=6, color=GOLD, markeredgecolor=FG)
@@ -129,7 +133,7 @@ class SceneCanvas(PlotCanvas):
             self.link_artist, = ax.plot(*self.linkage[0].T, color=FG, lw=2, marker='o', markersize=5)
             all_coords.append(self.linkage.reshape(-1,3))
         points = coords.reshape(-1,1,3)
-        collection = Line3DCollection(np.concatenate([points[:-1],points[1:]],axis=1),cmap='winter',linewidth=1.6)
+        collection = Line3DCollection(np.concatenate([points[:-1],points[1:]],axis=1),cmap=NEO_CMAP,linewidth=1.6)
         collection.set_array(parameter[:-1]);ax.add_collection3d(collection)
         together = np.vstack(all_coords)
         ranges=[]
@@ -142,9 +146,9 @@ class SceneCanvas(PlotCanvas):
             width=max(hi-lo for lo,hi in ranges)
             ranges=[((lo+hi-width)/2,(lo+hi+width)/2) for lo,hi in ranges]
         ax.set_xlim(*ranges[0]);ax.set_ylim(*ranges[1]);ax.set_zlim(*ranges[2])
-        ax.set_xlabel(visual['labels'][0],labelpad=8);ax.set_ylabel(visual['labels'][1],labelpad=8)
-        ax.set_zlabel(visual['labels'][2],labelpad=8)
-        ax.set_box_aspect((1,1,1) if spatial else (1,1,.85),zoom=.9)
+        ax.set_xlabel(visual['labels'][0],labelpad=5);ax.set_ylabel(visual['labels'][1],labelpad=5)
+        ax.set_zlabel(visual['labels'][2],labelpad=5)
+        ax.set_box_aspect((1,1,1) if spatial else (1,1,.85),zoom=1.03)
         self._draw_planes(ranges)
         self.marker, = ax.plot(*coords[0].reshape(3,1),marker='o',markersize=6,color=CYAN,markeredgecolor=FG)
         self.view('Perspectiva')
@@ -222,7 +226,7 @@ class AnalysisCanvas(PlotCanvas):
             b.axvline(c.threshold, color=GOLD, lw=1.2)
             b.set(xlabel="Posición final (m)", ylabel="Realizaciones", title="Distribución final y umbral")
             d.scatter(extra['terminal'], extra['v_terminal'], c=extra['stiffness'],
-                      cmap="winter", s=5, alpha=.45)
+                      cmap=NEO_CMAP, s=5, alpha=.45)
             d.set(xlabel="x final (m)", ylabel="v final (m/s)", title="Distribución conjunta de estados")
             n = np.arange(1, c.count+1)
             p = np.cumsum(extra['terminal'] > c.threshold)/n
@@ -236,7 +240,7 @@ class AnalysisCanvas(PlotCanvas):
         self.draw_idle()
 
     def _draw_charts(self, axes, charts):
-        colors=[CYAN,BLUE,GOLD,'#c3a6ff']
+        colors=[CYAN,BLUE,GOLD,'#c8a0e1']
         for ax, spec in zip(axes,charts):
             if 'band' in spec:
                 x,low,high=spec['band'];ax.fill_between(x,low,high,color=BLUE,alpha=.22)
@@ -250,7 +254,7 @@ class AnalysisCanvas(PlotCanvas):
             ax.set(xlabel=spec['xlabel'],ylabel=spec['ylabel'],title=spec['title'])
             ax.set_yscale(spec.get('yscale','linear'))
             if any(s.get('label') for s in spec['series']):
-                legend=ax.legend(fontsize=7,facecolor=BG,edgecolor='#2b3c54')
+                legend=ax.legend(fontsize=7,facecolor=BG,edgecolor='#354f70')
                 for text in legend.get_texts():text.set_color(FG)
 
 

@@ -7,7 +7,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from PySide6.QtCore import Qt, QEventLoop, QTimer
+from PySide6.QtCore import Qt, QEventLoop, QTimer, QPoint
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 
@@ -152,6 +152,38 @@ class DesktopTests(unittest.TestCase):
         self.window.apply_config(c);restored=self.window.collect_config()
         self.assertEqual(restored.duration,c.duration)
         self.assertEqual(restored.parameters['half_life'],c.parameters['half_life'])
+
+    def test_six_sections_and_compact_window_navigation(self):
+        self.assertEqual(self.window.active_section,'inicio')
+        expected={'inicio':7,'laboratorio':0,'modelos':4,'particulas':5,'resultados':3,'cuaderno':6}
+        self.assertEqual(len(self.window.nav_buttons),len(expected))
+        self.window.resize(1000,720)
+        for section,index in expected.items():
+            self.window.nav_buttons[section].click();self.app.processEvents()
+            self.assertEqual(self.window.tabs.currentIndex(),index)
+            self.assertTrue(self.window.nav_buttons[section].isChecked())
+        self.window.open_family('Partículas y cuántica')
+        self.assertEqual(self.window.active_section,'modelos')
+        self.assertEqual(self.window.library_family_selector.currentData(),'Partículas y cuántica')
+
+    def test_dashboard_and_library_launch_examples(self):
+        self.window.dashboard.exampleRequested.emit('electron_helix');self.wait_worker()
+        self.assertEqual(self.window.active_section,'laboratorio')
+        self.assertEqual(self.window.result.config.model,'em_particle')
+        self.window.navigate_section('modelos')
+        self.window.library_model_selector.setCurrentIndex(self.window.library_model_selector.findData('quantum_barrier'))
+        self.window.library_example_selector.setCurrentIndex(self.window.library_example_selector.findData('quantum_top'))
+        self.window.open_example(self.window.library_example_selector.currentData());self.wait_worker()
+        self.assertEqual(self.window.result.config.parameters['energy'],5.)
+        self.assertEqual(self.window.result.config.parameters['barrier'],5.)
+
+    def test_neumorphic_slider_accepts_mouse_and_keyboard(self):
+        self.window.navigate_section('laboratorio');self.app.processEvents()
+        slider=self.window.timeline;slider.setRange(0,1000)
+        QTest.mouseClick(slider,Qt.MouseButton.LeftButton,pos=QPoint(slider.width()-15,slider.height()//2))
+        self.assertGreater(slider.value(),900)
+        before=slider.value();QTest.keyClick(slider,Qt.Key.Key_Left)
+        self.assertLess(slider.value(),before)
 
 
 if __name__ == '__main__':

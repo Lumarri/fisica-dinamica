@@ -17,9 +17,19 @@ def smoke_test(app, directory):
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
     window = MainWindow(auto_run=False)
+    window.resize(1460,940)
     window.show()
     report = {'status': 'failed', 'models': [], 'examples': len(EXAMPLES), 'edition': '2.0'}
     try:
+        from PySide6.QtGui import QFont,QFontInfo
+        report['font_families']={'interface':QFontInfo(app.font()).family(),
+                                 'numbers':QFontInfo(QFont('cmr10')).family()}
+        if not report['font_families']['interface'].startswith('Space Grotesk'):
+            raise RuntimeError('La fuente de interfaz no se ha incluido correctamente.')
+        if 'cmr10' not in report['font_families']['numbers'].lower():
+            raise RuntimeError('La fuente numérica Computer Modern no está disponible.')
+        app.processEvents()
+        if not window.grab().save(str(directory/'inicio.png')):raise RuntimeError('No se pudo guardar Inicio.')
         for model, spec in MODELS.items():
             config = ExperimentConfig(model=model, duration=min(spec.duration,4), count=100,
                                       solver=SolverSettings(points=300))
@@ -31,6 +41,12 @@ def smoke_test(app, directory):
             if not window.grab().save(str(directory / f'{model}.png')):
                 raise RuntimeError('No se pudo guardar la captura de verificación.')
             report['models'].append(model)
+        for section in ['modelos','particulas','resultados','cuaderno']:
+            window.navigate_section(section);app.processEvents()
+            if not window.grab().save(str(directory/f'{section}.png')):raise RuntimeError('No se pudo guardar la sección '+section)
+        report['sections']=['inicio','laboratorio','modelos','particulas','resultados','cuaderno']
+        report['theme']='Neumorfismo oscuro · azul marino'
+        report['typography']=['Space Grotesk','Computer Modern']
         report['status'] = 'passed'
         return 0
     except Exception:

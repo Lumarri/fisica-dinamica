@@ -1,6 +1,6 @@
 # Guía de modelos y ejemplos · DYNAMIS 2
 
-Esta guía acompaña a las pestañas **Fórmulas y precisión**, **Datos** y **Guía y ejemplos** del programa.
+Esta guía acompaña a las pestañas **Fórmulas y precisión**, **Datos** y **Modelos y ejemplos** del programa.
 Incluye 15 modelos y 34 proyectos de ejemplo. El catálogo de referencia contiene 28 especies de partículas.
 
 ## Uso de las unidades y de la precisión
@@ -823,6 +823,6 @@ $$T(E=V_0)=[1+mV_0a^2/(2\hbar^2)]^{-1}$$
 
 ## Guardar y exportar
 
-Los proyectos v2 guardan parámetros completos, unidades implícitas del modelo, semilla, tolerancias, nombre, investigador/a, objetivo, fuentes y notas. Se importan también proyectos v1. Los datos principales y auxiliares se eligen en la pestaña Datos; CSV exporta todas sus filas y un JSON asociado. Las figuras y fórmulas pueden guardarse en PNG.
+Los proyectos v2 guardan parámetros completos, unidades implícitas del modelo, semilla, tolerancias, nombre, investigador/a, objetivo, fuentes y notas. Se importan también proyectos v1. Los datos principales y auxiliares se eligen en la sección Resultados; CSV exporta todas sus filas y un JSON asociado. Las figuras y fórmulas pueden guardarse en PNG.
 
 Este archivo y los proyectos de ejemplo se regeneran con `python scripts/generate_manual.py`.

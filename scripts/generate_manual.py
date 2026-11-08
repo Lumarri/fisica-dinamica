@@ -16,7 +16,7 @@ def cell(value):
 def main():
     (ROOT/'docs').mkdir(exist_ok=True);(ROOT/'examples').mkdir(exist_ok=True)
     lines=['# Guía de modelos y ejemplos · DYNAMIS 2','',
-           'Esta guía acompaña a las pestañas **Fórmulas y precisión**, **Datos** y **Guía y ejemplos** del programa.',
+           'Esta guía acompaña a las pestañas **Fórmulas y precisión**, **Datos** y **Modelos y ejemplos** del programa.',
            f'Incluye {len(MODELS)} modelos y {len(EXAMPLES)} proyectos de ejemplo. El catálogo de referencia contiene {len(PARTICLES)} especies de partículas.',
            '', '## Uso de las unidades y de la precisión','',
            'Los rangos de cada campo no garantizan que todas sus combinaciones sean válidas. La aplicación comprueba también condiciones conjuntas. Las figuras son espaciales, de estados o complejas según indique cada modelo. En escenas espaciales se aplica la misma escala a los tres ejes.',
@@ -60,7 +60,7 @@ def main():
         '- **Órbitas:** el centro es puntual, sin superficie ni colisiones. La energía es específica (J/kg). El paso máximo corresponde a τ=t√(GM/a³); la duración se expresa en períodos.',
         '- **Duffing:** la FFT usa la segunda mitad, quita la media y aplica ventana Hann. La sección estroboscópica usa interpolación lineal y descarta el primer 20 % del tiempo. Aumenta duración y resolución para investigar respuestas complejas.',
         '', '## Guardar y exportar','',
-        'Los proyectos v2 guardan parámetros completos, unidades implícitas del modelo, semilla, tolerancias, nombre, investigador/a, objetivo, fuentes y notas. Se importan también proyectos v1. Los datos principales y auxiliares se eligen en la pestaña Datos; CSV exporta todas sus filas y un JSON asociado. Las figuras y fórmulas pueden guardarse en PNG.',
+        'Los proyectos v2 guardan parámetros completos, unidades implícitas del modelo, semilla, tolerancias, nombre, investigador/a, objetivo, fuentes y notas. Se importan también proyectos v1. Los datos principales y auxiliares se eligen en la sección Resultados; CSV exporta todas sus filas y un JSON asociado. Las figuras y fórmulas pueden guardarse en PNG.',
         '', 'Este archivo y los proyectos de ejemplo se regeneran con `python scripts/generate_manual.py`.','']
     (ROOT/'docs'/'MODELOS.md').write_text('\n'.join(lines),encoding='utf-8')
     for example in EXAMPLES:

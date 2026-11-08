@@ -24,6 +24,14 @@ También puedes abrir `Iniciar_Dynamis.bat`, que prepara el entorno e instala la
 
 Si ya tienes el repositorio, actualízalo con `git pull` e instala de nuevo `requirements.txt` en tu entorno. En Linux/macOS también se puede ejecutar el código con `python app.py`; Ubuntu/Debian necesita `libegl1` y `libopengl0` para Qt. El flujo de empaquetado genera el ejecutable de Windows.
 
+## Diseño y secciones
+
+Tema **neumórfico oscuro en azul marino**, con superficies de doble sombra, controles hundidos y estados activos en azul hielo. **Space Grotesk** se incluye para la interfaz; **Computer Modern**, la tipografía clásica de LaTeX, se usa en fórmulas, lecturas científicas, entradas numéricas y datos. No hace falta instalar fuentes ni una distribución de TeX para usar el programa.
+
+La navegación principal ofrece **Inicio, Laboratorio, Modelos y ejemplos, Partículas, Resultados y Cuaderno**. Inicio abre experimentos destacados; la biblioteca permite filtrar por área, consultar supuestos y cargar ejemplos. El área de trabajo es desplazable en ventanas pequeñas.
+
+La fuente Space Grotesk se distribuye bajo SIL Open Font License 1.1; se conserva su licencia en `assets/fonts/OFL.txt`.
+
 ## Modelos incluidos
 
 | Área | Modelos | Campos y resultados destacados |
@@ -33,13 +41,13 @@ Si ya tienes el repositorio, actualízalo con `git pull` e instala de nuevo `req
 | Probabilidades | Conjunto de osciladores | Realizaciones, semilla, incertidumbre de rigidez y posición, percentiles, distribución conjunta e intervalo Wilson |
 | Partículas y cuántica | Partícula relativista en E/B, Rutherford, población radiactiva, decaimiento de dos cuerpos y barrera cuántica 1D | Especie, energía, campos vectoriales, impacto, carga del blanco, semivida, eficiencia, fondo, masas de productos, boost y barrera; trayectorias, secciones eficaces, cuentas, cuatro-momentos y transmisión/reflexión |
 
-Consulta la [guía detallada de modelos, parámetros y ejemplos](docs/MODELOS.md). La misma información se encuentra dentro del programa en **Guía y ejemplos**.
+Consulta la [guía detallada de modelos, parámetros y ejemplos](docs/MODELOS.md). La misma información se encuentra dentro del programa en **Modelos y ejemplos**.
 
 ## Primer experimento
 
-1. Selecciona un área y un modelo en la barra lateral.
+1. Abre **Laboratorio** o elige un experimento destacado en **Inicio**. Selecciona el área y el modelo que quieres estudiar.
 2. Elige un ejemplo y pulsa **Cargar ejemplo y simular**. El proyecto incluye una descripción del resultado esperado.
-3. Consulta **Escena 3D**, **Series y estadística**, **Fórmulas y precisión** y **Datos**.
+3. Consulta **Escena 3D**, **Series y estadística** y **Fórmulas y precisión** dentro de Laboratorio. Las tablas y exportaciones están en **Resultados**.
 4. Modifica un parámetro, vuelve a simular y contrasta la hipótesis.
 5. En **Cuaderno**, registra proyecto, investigador/a, objetivo, fuentes y observaciones. Guarda el proyecto JSON y exporta los datos o figuras.
 
@@ -96,7 +104,8 @@ El flujo de Windows construye el `.exe` y ejecuta la aplicación empaquetada con
 | Archivo | Función |
 | --- | --- |
 | `app.py` | Arranque y verificación del ejecutable |
-| `desktop.py`, `panels.py` | Ventana, formularios, datos, guía y catálogo de partículas |
+| `desktop.py`, `panels.py`, `dashboard.py` | Secciones, ventana, formularios, inicio, datos y guías |
+| `theme.py`, `assets/` | Neumorfismo oscuro, fuentes e iconos |
 | `catalog.py` | Definiciones de campos, unidades, supuestos, fórmulas y ejemplos |
 | `models.py` | Integrador y modelos originales |
 | `advanced_models.py` | Mecánica adicional, caos, partículas y barrera cuántica |

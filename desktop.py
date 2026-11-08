@@ -9,73 +9,17 @@ from PySide6.QtWidgets import (
     QApplication, QCheckBox, QComboBox, QDoubleSpinBox, QFileDialog,
     QFormLayout, QFrame, QGroupBox, QHBoxLayout, QLabel, QMainWindow,
     QMessageBox, QPushButton, QScrollArea, QSlider, QSpinBox, QSplitter,
-    QTabWidget, QTextBrowser, QTextEdit, QVBoxLayout, QWidget, QLineEdit,
+    QTabWidget, QTextBrowser, QTextEdit, QVBoxLayout, QWidget, QLineEdit, QButtonGroup,
 )
 from matplotlib.backends.backend_qtagg import NavigationToolbar2QT
 
 from experiments import ExperimentConfig, MODEL_NAMES, run_experiment, example_config
 from catalog import MODELS, EXAMPLES
 from panels import DatasetPanel, GuidePanel, ParticlePanel
+from dashboard import Dashboard
 from models import SolverSettings
 from plotting import AnalysisCanvas, FormulaCanvas, SceneCanvas
-
-STYLE = """
-QWidget { color: #e2eaf5; font-family: 'Segoe UI', 'DejaVu Sans'; font-size: 12px; }
-QMainWindow, QWidget#root { background: #0b1320; }
-QFrame#header { background: #0e192a; border-bottom: 1px solid #25344a; }
-QFrame#sidebar { background: #101c2e; border: 1px solid #26364d; border-radius: 10px; }
-QLabel#brand { font-size: 22px; font-weight: 700; color: #57d9d0; }
-QLabel#eyebrow { color: #57d9d0; font-size: 10px; font-weight: 700; }
-QLabel#title { font-size: 24px; font-weight: 600; }
-QLabel#muted { color: #91a6c0; font-size: 11px; }
-QLabel#status { color: #efba6b; padding: 5px; }
-QGroupBox { border: 1px solid #2a3a51; border-radius: 7px; margin-top: 15px; padding: 12px 9px 7px; font-weight: 600; }
-QGroupBox::title { subcontrol-origin: margin; left: 10px; color: #a6bad4; }
-QComboBox, QDoubleSpinBox, QSpinBox, QLineEdit { background: #0c1626; border: 1px solid #33445d; border-radius: 5px; padding: 6px; min-height: 17px; }
-QComboBox::drop-down { width: 18px; border: none; }
-QComboBox QAbstractItemView { background: #142238; selection-background-color: #22515a; }
-QPushButton { background: #1b2c43; border: 1px solid #34475f; padding: 8px 13px; border-radius: 6px; }
-QPushButton:hover { background: #293f5b; border-color: #57d9d0; }
-QPushButton:disabled { color: #586c86; border-color: #25344a; }
-QPushButton#primary { background: #57d9d0; color: #0a2029; font-weight: 700; border: none; min-height: 24px; }
-QPushButton#primary:hover { background: #87ede5; }
-QPushButton#primary:disabled { background: #24434d; color: #78959f; }
-QFrame#metric { background: #111e31; border: 1px solid #293a51; border-radius: 8px; }
-QLabel#metricvalue { color: #e6f4fa; font-size: 21px; font-weight: 600; }
-QLabel#metriclabel { color: #91a6c0; font-size: 10px; }
-QTabWidget::pane { border: 1px solid #293a51; border-radius: 7px; background: #111c2e; }
-QTabBar::tab { padding: 10px 15px; color: #95aac6; border-bottom: 2px solid transparent; }
-QTabBar::tab:selected { color: #57d9d0; border-bottom-color: #57d9d0; }
-QTextEdit, QTextBrowser { background: #111c2e; border: 1px solid #2a3b53; border-radius: 6px; padding: 10px; selection-background-color: #22515a; }
-QScrollArea { background: transparent; border: none; }
-QScrollBar:vertical { width: 9px; background: #0e192a; }
-QScrollBar::handle:vertical { background: #34475f; min-height: 25px; border-radius: 4px; }
-QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
-QSlider::groove:horizontal { height: 4px; background: #2a3d57; border-radius: 2px; }
-QSlider::handle:horizontal { width: 12px; height: 12px; margin: -4px 0; background: #57d9d0; border-radius: 6px; }
-QToolBar { border: none; background: #111c2e; }
-QToolButton { padding: 4px; background: transparent; }
-QMenuBar, QMenu { background: #111c2e; }
-QMenu::item:selected { background: #24434d; }
-QStatusBar { color: #91a6c0; background: #0e192a; }
-"""
-
-
-def setup_style(app):
-    app.setStyle("Fusion")
-    palette = QPalette()
-    for role, color in [(QPalette.ColorRole.Window, '#0b1320'),
-                        (QPalette.ColorRole.WindowText, '#e2eaf5'),
-                        (QPalette.ColorRole.Base, '#111c2e'),
-                        (QPalette.ColorRole.Text, '#e2eaf5'),
-                        (QPalette.ColorRole.Button, '#1b2c43'),
-                        (QPalette.ColorRole.ButtonText, '#e2eaf5'),
-                        (QPalette.ColorRole.Highlight, '#22515a')]:
-        palette.setColor(role, QColor(color))
-    app.setPalette(palette)
-    app.setFont(QFont('Segoe UI', 10))
-    app.setStyleSheet(STYLE)
-
+from theme import setup_style, NeoSurface, NeoButton as QPushButton, NeoTabBar, NeoSlider as QSlider, LatexNumber
 
 class SimulationWorker(QThread):
     completed = Signal(object)
@@ -112,13 +56,13 @@ class ScientificNumber(QDoubleSpinBox):
         return state, text, position
 
 
-class Metric(QFrame):
+class Metric(NeoSurface):
     def __init__(self):
         super().__init__()
         self.setObjectName('metric')
         box = QVBoxLayout(self)
         box.setContentsMargins(14, 10, 14, 10)
-        self.value = QLabel('—'); self.value.setObjectName('metricvalue')
+        self.value = LatexNumber('—'); self.value.setObjectName('metricvalue')
         self.label = QLabel('Esperando simulación'); self.label.setObjectName('metriclabel')
         self.label.setWordWrap(True)
         box.addWidget(self.value); box.addWidget(self.label)
@@ -127,12 +71,22 @@ class Metric(QFrame):
         self.value.setText(str(value)); self.label.setText(label)
 
 
+class Workspace(QWidget):
+    """Permite ajustar el lienzo al panel sin forzar su altura preferida."""
+    def hasHeightForWidth(self):return False
+
+    def heightForWidth(self,width):return -1
+
+
 class MainWindow(QMainWindow):
     def __init__(self, *, auto_run=True):
         super().__init__()
         self.setWindowTitle('DYNAMIS 2 · Física, dinámica y partículas')
-        self.resize(1460, 940)
-        self.setMinimumSize(1080, 740)
+        self.setMinimumSize(1000,640)
+        screen=QApplication.primaryScreen()
+        available=screen.availableGeometry() if screen is not None else None
+        self.resize(min(1460,max(1000,available.width()-48)) if available else 1460,
+                    min(940,max(640,available.height()-55)) if available else 940)
         self.result = None
         self.worker = None
         self.loading = True
@@ -147,15 +101,18 @@ class MainWindow(QMainWindow):
         root = QWidget(); root.setObjectName('root'); self.setCentralWidget(root)
         layout = QVBoxLayout(root); layout.setContentsMargins(16, 0, 16, 8); layout.setSpacing(12)
         layout.addWidget(self._build_header())
-        content = QSplitter(Qt.Orientation.Horizontal)
+        layout.addWidget(self._build_navigation())
+        content = QSplitter(Qt.Orientation.Horizontal); self.content_splitter=content
         self.sidebar = self._build_sidebar()
         content.addWidget(self.sidebar)
-        content.addWidget(self._build_workspace())
+        self.workspace_scroll=QScrollArea();self.workspace_scroll.setWidgetResizable(True)
+        self.workspace_scroll.setWidget(self._build_workspace());content.addWidget(self.workspace_scroll)
         content.setSizes([295, 1120]); content.setChildrenCollapsible(False)
         layout.addWidget(content, 1)
-        self.statusBar().showMessage('Ventana nativa · datos y proyectos locales · aritmética float64')
+        self.statusBar().showMessage('Espacio de trabajo local · 15 modelos · proyectos y datos en tu equipo')
         self.loading = False
         self._model_changed()
+        self.navigate_section('inicio')
         if auto_run:
             QTimer.singleShot(80, self.run_simulation)
 
@@ -170,8 +127,90 @@ class MainWindow(QMainWindow):
         menu.addSeparator()
         menu.addAction('Salir', self.close)
 
+    def _build_navigation(self):
+        frame=NeoSurface();layout=QHBoxLayout(frame);layout.setContentsMargins(12,9,12,9);layout.setSpacing(7)
+        self.nav_buttons={};self.nav_group=QButtonGroup(self)
+        for key,title in [('inicio','Inicio'),('laboratorio','Laboratorio'),('modelos','Modelos y ejemplos'),('particulas','Partículas'),('resultados','Resultados'),('cuaderno','Cuaderno')]:
+            button=QPushButton(title);button.setCheckable(True)
+            button.clicked.connect(lambda checked=False,name=key:self.navigate_section(name))
+            self.nav_group.addButton(button);self.nav_buttons[key]=button;layout.addWidget(button,1)
+        return frame
+
+    def navigate_section(self,key):
+        indices={'inicio':7,'laboratorio':0,'modelos':4,'particulas':5,'resultados':3,'cuaderno':6}
+        if key not in indices:return
+        index=self.tabs.currentIndex() if key=='laboratorio' and self.tabs.currentIndex() in {0,1,2} else indices[key]
+        self.tabs.setCurrentIndex(index);self._section_from_tab(index)
+
+    def _section_from_tab(self,index):
+        key={3:'resultados',4:'modelos',5:'particulas',6:'cuaderno',7:'inicio'}.get(index,'laboratorio')
+        self.active_section=key
+        for name,button in self.nav_buttons.items():button.setChecked(name==key)
+        lab=key=='laboratorio';context=key in {'laboratorio','resultados'}
+        self.sidebar.setVisible(lab);self.tabs.tabBar().setVisible(lab)
+        for widget in [self.workspace_eyebrow,self.experiment_label,*self.metrics]:widget.setVisible(context)
+        self.workspace_title.setVisible(False)
+        self.state_label.setVisible(context);self.csv_button.setVisible(context)
+        if lab:self.content_splitter.setSizes([320,1100])
+
+    def open_example(self,key):
+        if self.worker is not None:
+            self.statusBar().showMessage('Espera a que termine el cálculo para cargar otro ejemplo.',6000);return
+        self.apply_config(example_config(key))
+        self.example_selector.setCurrentIndex(self.example_selector.findData(key))
+        self.run_simulation()
+
+    def open_family(self,family):
+        self.navigate_section('modelos')
+        self.library_family_selector.setCurrentIndex(self.library_family_selector.findData(family))
+
+    def _build_library(self):
+        page=QWidget();layout=QVBoxLayout(page)
+        title=QLabel('Biblioteca de modelos y ejemplos');title.setObjectName('title');layout.addWidget(title)
+        detail=QLabel('Consulta los supuestos, las unidades y los resultados esperados antes de abrir un experimento.');detail.setObjectName('muted');detail.setWordWrap(True);layout.addWidget(detail)
+        filters=QHBoxLayout();self.library_family_selector=QComboBox();self.library_family_selector.addItem('Todas las áreas','')
+        for family in dict.fromkeys(spec.family for spec in MODELS.values()):self.library_family_selector.addItem(family,family)
+        self.library_model_selector=QComboBox()
+        for key,spec in MODELS.items():self.library_model_selector.addItem(spec.name,key)
+        filters.addWidget(self.library_family_selector);filters.addWidget(self.library_model_selector,1);layout.addLayout(filters)
+        row=QHBoxLayout();self.library_example_selector=QComboBox();row.addWidget(self.library_example_selector,1)
+        button=QPushButton('Abrir ejemplo en el laboratorio');button.clicked.connect(lambda:self.open_example(self.library_example_selector.currentData()));row.addWidget(button);layout.addLayout(row)
+        self.guide=GuidePanel();layout.addWidget(self.guide,1)
+        self.library_family_selector.currentIndexChanged.connect(self._library_filter_changed)
+        self.library_model_selector.currentIndexChanged.connect(self._library_model_changed)
+        self.library_example_selector.currentIndexChanged.connect(self._library_example_changed)
+        return page
+
+    def _library_filter_changed(self,*_):
+        previous=self.library_model_selector.currentData();family=self.library_family_selector.currentData()
+        self.library_model_selector.blockSignals(True);self.library_model_selector.clear()
+        for key,spec in MODELS.items():
+            if not family or spec.family==family:self.library_model_selector.addItem(spec.name,key)
+        self.library_model_selector.setCurrentIndex(max(0,self.library_model_selector.findData(previous)))
+        self.library_model_selector.blockSignals(False);self._library_model_changed()
+
+    def _library_model_changed(self,*_):
+        key=self.library_model_selector.currentData()
+        if key is None:return
+        self.library_example_selector.blockSignals(True);self.library_example_selector.clear()
+        for example in EXAMPLES:
+            if example.model==key:self.library_example_selector.addItem(example.label,example.key)
+        self.library_example_selector.blockSignals(False);self._library_example_changed()
+
+    def _library_example_changed(self,*_):
+        key=self.library_model_selector.currentData()
+        if key:self.guide.set_model(key,self.library_example_selector.currentData())
+
+    def _sync_library(self,model,example=None):
+        if self.library_model_selector.findData(model)<0:
+            self.library_family_selector.blockSignals(True);self.library_family_selector.setCurrentIndex(0);self.library_family_selector.blockSignals(False)
+            self._library_filter_changed()
+        self.library_model_selector.blockSignals(True);self.library_model_selector.setCurrentIndex(self.library_model_selector.findData(model));self.library_model_selector.blockSignals(False)
+        self._library_model_changed()
+        if example:self.library_example_selector.setCurrentIndex(self.library_example_selector.findData(example))
+
     def _build_header(self):
-        header = QFrame(); header.setObjectName('header')
+        header = NeoSurface(); header.setObjectName('header')
         box = QHBoxLayout(header); box.setContentsMargins(10, 14, 10, 14)
         brand = QLabel('DYNAMIS'); brand.setObjectName('brand')
         box.addWidget(brand)
@@ -200,7 +239,7 @@ class MainWindow(QMainWindow):
         return group, form
 
     def _build_sidebar(self):
-        outer = QFrame(); outer.setObjectName('sidebar'); outer.setMinimumWidth(290); outer.setMaximumWidth(410)
+        outer = NeoSurface(); outer.setObjectName('sidebar'); outer.setMinimumWidth(290); outer.setMaximumWidth(410)
         box = QVBoxLayout(outer); box.setContentsMargins(10, 12, 10, 10)
         eyebrow = QLabel('01 / CONFIGURAR EXPERIMENTO'); eyebrow.setObjectName('eyebrow'); box.addWidget(eyebrow)
         scroll = QScrollArea(); scroll.setWidgetResizable(True)
@@ -264,16 +303,16 @@ class MainWindow(QMainWindow):
         return outer
 
     def _build_workspace(self):
-        area = QWidget(); box = QVBoxLayout(area); box.setContentsMargins(10, 0, 0, 0); box.setSpacing(9)
-        eyebrow = QLabel('02 / OBSERVAR · MEDIR · CONTRASTAR'); eyebrow.setObjectName('eyebrow'); box.addWidget(eyebrow)
-        title = QLabel('Explora el movimiento.'); title.setObjectName('title'); box.addWidget(title)
+        area = Workspace(); box = QVBoxLayout(area); box.setContentsMargins(10, 0, 0, 0); box.setSpacing(9)
+        eyebrow = QLabel('LABORATORIO / OBSERVAR · MEDIR · CONTRASTAR'); eyebrow.setObjectName('eyebrow'); box.addWidget(eyebrow); self.workspace_eyebrow=eyebrow
+        title = QLabel('Explora el movimiento.'); title.setObjectName('title'); box.addWidget(title); self.workspace_title=title
         self.experiment_label = QLabel('Configura un experimento y pulsa Simular.'); self.experiment_label.setObjectName('muted')
         self.experiment_label.setTextFormat(Qt.TextFormat.PlainText); self.experiment_label.setWordWrap(True); box.addWidget(self.experiment_label)
         cards = QHBoxLayout(); cards.setSpacing(9); self.metrics = [Metric() for _ in range(4)]
         for card in self.metrics:
             cards.addWidget(card)
         box.addLayout(cards)
-        self.tabs = QTabWidget()
+        self.tabs = QTabWidget(); self.tabs.setTabBar(NeoTabBar())
         scene_page = QWidget(); scene_layout = QVBoxLayout(scene_page); scene_layout.setContentsMargins(8, 7, 8, 7)
         controls = QHBoxLayout()
         controls.addWidget(QLabel('Vista'))
@@ -292,7 +331,7 @@ class MainWindow(QMainWindow):
         self.play_button = QPushButton('Reproducir'); self.play_button.setEnabled(False); self.play_button.clicked.connect(self._toggle_play)
         timeline.addWidget(self.play_button)
         self.timeline = QSlider(Qt.Orientation.Horizontal); self.timeline.setRange(0, 0); self.timeline.valueChanged.connect(self._seek); timeline.addWidget(self.timeline, 1)
-        self.time_label = QLabel('t = 0'); self.time_label.setMinimumWidth(120); timeline.addWidget(self.time_label)
+        self.time_label = QLabel('t = 0'); self.time_label.setObjectName('numeric'); self.time_label.setMinimumWidth(120); timeline.addWidget(self.time_label)
         scene_layout.addLayout(timeline)
         self.tabs.addTab(scene_page, 'Escena 3D')
         analysis_page = QWidget(); analysis_layout = QVBoxLayout(analysis_page)
@@ -304,7 +343,7 @@ class MainWindow(QMainWindow):
         self.precision_text = QTextBrowser(); self.precision_text.setMinimumHeight(155); formulas_layout.addWidget(self.precision_text, 1)
         self.tabs.addTab(formulas_page, 'Fórmulas y precisión')
         self.data_panel = DatasetPanel(); self.tabs.addTab(self.data_panel, 'Datos')
-        self.guide = GuidePanel(); self.tabs.addTab(self.guide, 'Guía y ejemplos')
+        self.tabs.addTab(self._build_library(), 'Guía y ejemplos')
         self.particle_panel = ParticlePanel(); self.tabs.addTab(self.particle_panel, 'Partículas')
         notebook = QWidget(); notebook_box = QVBoxLayout(notebook)
         metadata_form = QFormLayout(); self.metadata_fields = {}
@@ -318,6 +357,10 @@ class MainWindow(QMainWindow):
         notebook_box.addWidget(self.notes, 1)
         note = QLabel('Las notas se guardan junto con parámetros, tolerancias y semilla en el proyecto JSON.'); note.setWordWrap(True); note.setObjectName('muted'); notebook_box.addWidget(note)
         self.tabs.addTab(notebook, 'Cuaderno')
+        self.dashboard=Dashboard();self.dashboard.exampleRequested.connect(self.open_example);self.dashboard.familyRequested.connect(self.open_family)
+        self.tabs.addTab(self.dashboard,'Inicio')
+        for index in range(3,self.tabs.count()):self.tabs.setTabVisible(index,False)
+        self.tabs.currentChanged.connect(self._section_from_tab)
         box.addWidget(self.tabs, 1)
         footer = QHBoxLayout()
         self.state_label = QLabel('Preparado'); self.state_label.setObjectName('status'); footer.addWidget(self.state_label, 1)
@@ -393,7 +436,7 @@ class MainWindow(QMainWindow):
 
     def _example_changed(self,*_):
         model=self.model_selector.currentData()
-        if model and hasattr(self,'guide'):self.guide.set_model(model,self.example_selector.currentData())
+        if model and hasattr(self,'guide'):self._sync_library(model,self.example_selector.currentData())
 
     def _model_changed(self, *_):
         if self.loading or self.model_selector.currentData() is None:return
@@ -538,7 +581,7 @@ class MainWindow(QMainWindow):
                 body += f'Error máximo de x frente a la solución analítica: {e["analytic_error"]:.6g} m. '
             if c.model == 'lorenz':
                 body += 'En regímenes caóticos, dos aproximaciones pueden separarse mucho a tiempos largos. '
-        self.precision_text.setHtml('<div style="color:#c4d3e7; line-height:1.5">'+body+'</div>')
+        self.precision_text.setHtml('<div style="color:#c4d2e7; line-height:1.5">'+body+'</div>')
 
     def _toggle_play(self):
         if self.result is None or self.dirty:
@@ -611,7 +654,7 @@ class MainWindow(QMainWindow):
         self.notes.setPlainText(config.notes)
         self._last_model=config.model
         self.loading = False
-        self._refresh_examples();self._mark_dirty()
+        self._refresh_examples();self._mark_dirty();self.navigate_section('laboratorio')
 
     def export_csv(self):
         if self.result is None or self.dirty or self.worker is not None:
