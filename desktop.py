@@ -9,11 +9,13 @@ from PySide6.QtWidgets import (
     QApplication, QCheckBox, QComboBox, QDoubleSpinBox, QFileDialog,
     QFormLayout, QFrame, QGroupBox, QHBoxLayout, QLabel, QMainWindow,
     QMessageBox, QPushButton, QScrollArea, QSlider, QSpinBox, QSplitter,
-    QTabWidget, QTextBrowser, QTextEdit, QVBoxLayout, QWidget,
+    QTabWidget, QTextBrowser, QTextEdit, QVBoxLayout, QWidget, QLineEdit,
 )
 from matplotlib.backends.backend_qtagg import NavigationToolbar2QT
 
-from experiments import ExperimentConfig, MODEL_NAMES, run_experiment
+from experiments import ExperimentConfig, MODEL_NAMES, run_experiment, example_config
+from catalog import MODELS, EXAMPLES
+from panels import DatasetPanel, GuidePanel, ParticlePanel
 from models import SolverSettings
 from plotting import AnalysisCanvas, FormulaCanvas, SceneCanvas
 
@@ -29,7 +31,7 @@ QLabel#muted { color: #91a6c0; font-size: 11px; }
 QLabel#status { color: #efba6b; padding: 5px; }
 QGroupBox { border: 1px solid #2a3a51; border-radius: 7px; margin-top: 15px; padding: 12px 9px 7px; font-weight: 600; }
 QGroupBox::title { subcontrol-origin: margin; left: 10px; color: #a6bad4; }
-QComboBox, QDoubleSpinBox, QSpinBox { background: #0c1626; border: 1px solid #33445d; border-radius: 5px; padding: 6px; min-height: 17px; }
+QComboBox, QDoubleSpinBox, QSpinBox, QLineEdit { background: #0c1626; border: 1px solid #33445d; border-radius: 5px; padding: 6px; min-height: 17px; }
 QComboBox::drop-down { width: 18px; border: none; }
 QComboBox QAbstractItemView { background: #142238; selection-background-color: #22515a; }
 QPushButton { background: #1b2c43; border: 1px solid #34475f; padding: 8px 13px; border-radius: 6px; }
@@ -128,7 +130,7 @@ class Metric(QFrame):
 class MainWindow(QMainWindow):
     def __init__(self, *, auto_run=True):
         super().__init__()
-        self.setWindowTitle('DYNAMIS · Física y sistemas dinámicos')
+        self.setWindowTitle('DYNAMIS 2 · Física, dinámica y partículas')
         self.resize(1460, 940)
         self.setMinimumSize(1080, 740)
         self.result = None
@@ -136,6 +138,8 @@ class MainWindow(QMainWindow):
         self.loading = True
         self.dirty = True
         self.fields = {}
+        self.dynamic_fields = {}
+        self._last_model = None
         self.timer = QTimer(self)
         self.timer.setInterval(65)
         self.timer.timeout.connect(self._advance_frame)
@@ -171,7 +175,7 @@ class MainWindow(QMainWindow):
         box = QHBoxLayout(header); box.setContentsMargins(10, 14, 10, 14)
         brand = QLabel('DYNAMIS'); brand.setObjectName('brand')
         box.addWidget(brand)
-        subtitle = QLabel('LABORATORIO DE FÍSICA\nSistemas dinámicos e incertidumbre'); subtitle.setObjectName('muted')
+        subtitle = QLabel('LABORATORIO DE FÍSICA · EDICIÓN 2\nMecánica · Caos · Partículas · Cuántica'); subtitle.setObjectName('muted')
         box.addSpacing(14); box.addWidget(subtitle); box.addStretch()
         for title, callback in [('Abrir proyecto', self.open_project), ('Guardar proyecto', self.save_project)]:
             button = QPushButton(title); button.clicked.connect(callback); box.addWidget(button)
@@ -196,20 +200,36 @@ class MainWindow(QMainWindow):
         return group, form
 
     def _build_sidebar(self):
-        outer = QFrame(); outer.setObjectName('sidebar'); outer.setMinimumWidth(278); outer.setMaximumWidth(390)
+        outer = QFrame(); outer.setObjectName('sidebar'); outer.setMinimumWidth(290); outer.setMaximumWidth(410)
         box = QVBoxLayout(outer); box.setContentsMargins(10, 12, 10, 10)
         eyebrow = QLabel('01 / CONFIGURAR EXPERIMENTO'); eyebrow.setObjectName('eyebrow'); box.addWidget(eyebrow)
         scroll = QScrollArea(); scroll.setWidgetResizable(True)
         body = QWidget(); self.side_layout = QVBoxLayout(body); self.side_layout.setContentsMargins(2, 0, 2, 0)
+        self.family_selector = QComboBox(); self.family_selector.addItem('Todas las áreas', '')
+        for family in dict.fromkeys(spec.family for spec in MODELS.values()):
+            self.family_selector.addItem(family, family)
+        self.family_selector.currentIndexChanged.connect(self._filter_models)
+        self.side_layout.addWidget(self.family_selector)
         self.model_selector = QComboBox()
+        self.model_selector.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
+        self.model_selector.setMinimumContentsLength(17)
         for key, name in MODEL_NAMES.items():
             self.model_selector.addItem(name, key)
         self.model_selector.currentIndexChanged.connect(self._model_changed)
         self.side_layout.addWidget(self.model_selector)
-        _, general = self._group('Tiempo')
+        self.model_summary = QLabel(); self.model_summary.setObjectName('muted'); self.model_summary.setWordWrap(True)
+        self.side_layout.addWidget(self.model_summary)
+        self.example_selector = QComboBox(); self.example_selector.currentIndexChanged.connect(self._example_changed)
+        self.example_selector.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
+        self.example_selector.setMinimumContentsLength(17)
+        self.side_layout.addWidget(self.example_selector)
+        self.load_example_button = QPushButton('Cargar ejemplo y simular')
+        self.load_example_button.clicked.connect(self.load_example); self.side_layout.addWidget(self.load_example_button)
+        self.time_group, general = self._group('Tiempo')
+        self.time_form = general
         general.addRow('Duración T', self._number('duration', 25., .5, 120., step=1))
-        label = QLabel('Segundos; Lorenz usa tiempo adimensional.'); label.setObjectName('muted'); label.setWordWrap(True)
-        general.addRow(label)
+        self.time_help = QLabel(); self.time_help.setObjectName('muted'); self.time_help.setWordWrap(True)
+        general.addRow(self.time_help)
         self.physical_group, self.physical_form = self._group('Parámetros físicos · SI')
         self.physical_form.addRow('Masa m (kg)', self._number('mass', 1., .05, 100.))
         self.physical_form.addRow('Rigidez k (N/m)', self._number('stiffness', 4., .05, 100.))
@@ -219,21 +239,24 @@ class MainWindow(QMainWindow):
                                            ('beta', 'β', 8/3, .1, 10.)]:
             form.addRow(label, self._number(key, val, low, high, decimals=6))
         form.addRow('Perturbación Δx', self._number('delta', .0001, 1e-8, 1., decimals=8, step=.0001))
-        _, self.initial_form = self._group('Condiciones iniciales')
+        self.initial_group, self.initial_form = self._group('Condiciones iniciales')
         for key, label, val in [('x0', 'x₀ (m)', 1.), ('v0', 'v₀ (m/s)', 0.), ('y0', 'y₀', 1.), ('z0', 'z₀', 1.)]:
             self.initial_form.addRow(label, self._number(key, val, -100., 100., decimals=6))
         self.ensemble_group, form = self._group('Conjunto probabilístico')
         form.addRow('Desv. k (N/m)', self._number('stiffness_std', .4, 0., 10.))
         form.addRow('Desv. x₀ (m)', self._number('position_std', .05, 0., 10.))
         form.addRow('Realizaciones N', self._number('count', 1000, 100, 10000, step=100, integer=True))
-        form.addRow('Semilla', self._number('seed', 42, 0, 2147483647, step=1, integer=True))
         form.addRow('Umbral a (m)', self._number('threshold', .5, -100., 100.))
         note = QLabel('K y X₀ uniformes e independientes.\nEste conjunto usa c = 0.'); note.setObjectName('muted'); note.setWordWrap(True); form.addRow(note)
+        self.dynamic_group, self.dynamic_form = self._group('Campos del modelo')
+        self.dynamic_form.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapAllRows)
+        self.seed_group, form = self._group('Reproducibilidad')
+        form.addRow('Semilla', self._number('seed', 42, 0, 2147483647, step=1, integer=True))
         self.solver_group, self.solver_form = self._group('Precisión y muestreo')
         self.solver_form.addRow('Tolerancia rtol', self._number('rtol', 1e-9, 1e-12, 1e-3, step=1e-9))
         self.solver_form.addRow('Tolerancia atol', self._number('atol', 1e-11, 1e-14, 1e-3, step=1e-11))
         self.solver_form.addRow('Paso máximo', self._number('max_step', .05, .001, 2., decimals=3, step=.01))
-        self.solver_form.addRow('Puntos temporales', self._number('points', 1200, 200, 3000, step=100, integer=True))
+        self.solver_form.addRow('Puntos de salida', self._number('points', 1200, 200, 3000, step=100, integer=True))
         self.side_layout.addStretch()
         scroll.setWidget(body); box.addWidget(scroll, 1)
         self.run_button = QPushButton('Simular experimento'); self.run_button.setObjectName('primary')
@@ -244,7 +267,8 @@ class MainWindow(QMainWindow):
         area = QWidget(); box = QVBoxLayout(area); box.setContentsMargins(10, 0, 0, 0); box.setSpacing(9)
         eyebrow = QLabel('02 / OBSERVAR · MEDIR · CONTRASTAR'); eyebrow.setObjectName('eyebrow'); box.addWidget(eyebrow)
         title = QLabel('Explora el movimiento.'); title.setObjectName('title'); box.addWidget(title)
-        self.experiment_label = QLabel('Configura un experimento y pulsa Simular.'); self.experiment_label.setObjectName('muted'); box.addWidget(self.experiment_label)
+        self.experiment_label = QLabel('Configura un experimento y pulsa Simular.'); self.experiment_label.setObjectName('muted')
+        self.experiment_label.setTextFormat(Qt.TextFormat.PlainText); self.experiment_label.setWordWrap(True); box.addWidget(self.experiment_label)
         cards = QHBoxLayout(); cards.setSpacing(9); self.metrics = [Metric() for _ in range(4)]
         for card in self.metrics:
             cards.addWidget(card)
@@ -279,7 +303,16 @@ class MainWindow(QMainWindow):
         self.formulas = FormulaCanvas(); formulas_layout.addWidget(self.formulas, 2)
         self.precision_text = QTextBrowser(); self.precision_text.setMinimumHeight(155); formulas_layout.addWidget(self.precision_text, 1)
         self.tabs.addTab(formulas_page, 'Fórmulas y precisión')
+        self.data_panel = DatasetPanel(); self.tabs.addTab(self.data_panel, 'Datos')
+        self.guide = GuidePanel(); self.tabs.addTab(self.guide, 'Guía y ejemplos')
+        self.particle_panel = ParticlePanel(); self.tabs.addTab(self.particle_panel, 'Partículas')
         notebook = QWidget(); notebook_box = QVBoxLayout(notebook)
+        metadata_form = QFormLayout(); self.metadata_fields = {}
+        for key, label in [('project_name','Nombre del proyecto'),('researcher','Investigador/a'),('objective','Objetivo / hipótesis'),('references','Fuentes propias')]:
+            field = QLineEdit(); field.setMaxLength(10000)
+            if key == 'project_name':field.setText('Experimento sin título')
+            self.metadata_fields[key] = field; metadata_form.addRow(label,field)
+        notebook_box.addLayout(metadata_form)
         notebook_box.addWidget(QLabel('Hipótesis, supuestos, fuentes y observaciones'))
         self.notes = QTextEdit(); self.notes.setPlaceholderText('Pregunta de investigación:\n\nHipótesis:\n\nSupuestos del modelo:\n\nFuentes / referencias:\n\nObservaciones y próximos experimentos:')
         notebook_box.addWidget(self.notes, 1)
@@ -292,21 +325,91 @@ class MainWindow(QMainWindow):
         box.addLayout(footer)
         return area
 
-    def _model_changed(self, *_):
-        if self.loading:
-            return
-        model = self.model_selector.currentData()
-        self.physical_group.setVisible(model != 'lorenz')
+    def _filter_models(self, *_):
+        previous = self.model_selector.currentData()
+        family = self.family_selector.currentData()
+        self.model_selector.blockSignals(True); self.model_selector.clear()
+        for key,spec in MODELS.items():
+            if not family or spec.family == family:self.model_selector.addItem(spec.name,key)
+        index = self.model_selector.findData(previous)
+        self.model_selector.setCurrentIndex(max(0,index)); self.model_selector.blockSignals(False)
+        if not self.loading:self._model_changed()
+
+    def _configure_model(self, model, *, rebuild=True):
+        spec = MODELS[model]; legacy = model in {'oscillator','lorenz','ensemble'}
+        self.physical_group.setVisible(model in {'oscillator','ensemble'})
         self.physical_form.setRowVisible(self.fields['damping'], model == 'oscillator')
         self.lorenz_group.setVisible(model == 'lorenz')
         self.ensemble_group.setVisible(model == 'ensemble')
+        self.initial_group.setVisible(legacy)
         self.initial_form.setRowVisible(self.fields['v0'], model != 'lorenz')
         self.initial_form.setRowVisible(self.fields['y0'], model == 'lorenz')
         self.initial_form.setRowVisible(self.fields['z0'], model == 'lorenz')
         self.initial_form.labelForField(self.fields['x0']).setText('x₀' if model == 'lorenz' else 'x₀ (m)')
-        for key in ['rtol', 'atol', 'max_step']:
-            self.solver_form.setRowVisible(self.fields[key], model != 'ensemble')
+        self.time_group.setVisible(spec.timed)
+        self.fields['duration'].setRange(*(spec.time_range if spec.timed else (1e-12,1e10)))
+        self.time_form.labelForField(self.fields['duration']).setText('Duración ('+spec.time_unit+')')
+        self.time_help.setText('Tiempo de evolución en '+spec.time_unit+'.' if spec.timed else '')
+        self.model_summary.setText(spec.summary)
+        self.seed_group.setVisible(model in {'ensemble','radioactive'})
+        self.dynamic_group.setVisible(not legacy)
+        self.solver_group.setVisible(model != 'logistic')
+        for key in ['rtol','atol','max_step']:
+            self.solver_form.setRowVisible(self.fields[key], spec.numeric)
+        self.solver_form.labelForField(self.fields['points']).setText('Puntos espaciales' if model == 'quantum_barrier' else 'Puntos de salida')
+        self.fields['max_step'].setToolTip('Paso del reloj interno: segundos en modelos SI, adimensional en Lorenz/Duffing, τ normalizado en órbitas y campos E/B. Consulta Fórmulas y precisión.')
+        if rebuild:
+            self.dynamic_fields = {}
+            while self.dynamic_form.rowCount():
+                self.dynamic_form.removeRow(0)
+            # El área desplazable debe crecer en vertical: las etiquetas van
+            # encima de su entrada y nunca se comprimen al añadir muchos campos.
+            self.dynamic_group.setMinimumHeight(45+70*len(spec.parameters))
+            for parameter in spec.parameters:
+                if parameter.choices:
+                    widget = QComboBox()
+                    for key,label in parameter.choices:widget.addItem(label,key)
+                    widget.setCurrentIndex(widget.findData(parameter.default));widget.currentIndexChanged.connect(self._mark_dirty)
+                else:
+                    widget = QSpinBox() if parameter.integer else ScientificNumber()
+                    if not parameter.integer:widget.setDecimals(20)
+                    widget.setRange(parameter.low,parameter.high);widget.setSingleStep(parameter.step);widget.setValue(parameter.default)
+                    widget.setKeyboardTracking(False);widget.valueChanged.connect(self._mark_dirty)
+                detail = parameter.description
+                if not parameter.choices:detail += f' · Rango: {parameter.low:g} a {parameter.high:g}'
+                widget.setToolTip(detail);widget.setMinimumWidth(95)
+                widget.setMinimumHeight(30)
+                label = QLabel(parameter.caption);label.setWordWrap(True);label.setToolTip(detail);label.setMinimumHeight(20)
+                self.dynamic_form.addRow(label,widget);self.dynamic_fields[parameter.key]=widget
+
+    def _refresh_examples(self):
+        previous=self.example_selector.currentData()
+        self.example_selector.blockSignals(True);self.example_selector.clear()
+        for example in EXAMPLES:
+            if example.model==self.model_selector.currentData():self.example_selector.addItem(example.label,example.key)
+        found=self.example_selector.findData(previous)
+        self.example_selector.setCurrentIndex(max(0,found));self.example_selector.blockSignals(False)
+        self._example_changed()
+
+    def _example_changed(self,*_):
+        model=self.model_selector.currentData()
+        if model and hasattr(self,'guide'):self.guide.set_model(model,self.example_selector.currentData())
+
+    def _model_changed(self, *_):
+        if self.loading or self.model_selector.currentData() is None:return
+        model=self.model_selector.currentData();changed=model!=self._last_model
+        self._configure_model(model,rebuild=changed)
+        if changed:self.fields['duration'].setValue(MODELS[model].duration)
+        self._last_model=model;self._refresh_examples()
         self._mark_dirty()
+
+    def load_example(self):
+        if self.worker is not None:return
+        key=self.example_selector.currentData()
+        if key is None:return
+        self.apply_config(example_config(key))
+        self.example_selector.setCurrentIndex(self.example_selector.findData(key))
+        self.run_simulation()
 
     def _mark_dirty(self, *_):
         if self.loading:
@@ -326,7 +429,9 @@ class MainWindow(QMainWindow):
         if self.model_selector.currentData() == 'ensemble':
             values['damping'] = 0.
         config = ExperimentConfig(model=self.model_selector.currentData(), solver=solver,
-                                  notes=self.notes.toPlainText(), **values)
+                                  notes=self.notes.toPlainText(),
+                                  parameters={k:(w.currentData() if isinstance(w,QComboBox) else w.value()) for k,w in self.dynamic_fields.items()},
+                                  **{k:w.text() for k,w in self.metadata_fields.items()}, **values)
         config.validate()
         return config
 
@@ -359,10 +464,12 @@ class MainWindow(QMainWindow):
         descriptions = {'oscillator': 'Espacio de fases ampliado: (x, v, t). El tercer eje es tiempo, no una dimensión espacial.',
                         'lorenz': 'Espacio de estados (x, y, z), adimensional. La línea ámbar es una condición inicial vecina.',
                         'ensemble': 'Conjunto en (x, v, t). Curvas azules: hasta 24 realizaciones; línea central: parámetros nominales.'}
-        self.scene_note.setText(descriptions[model]+' Arrastra para girar; usa las herramientas para acercar.')
-        self.experiment_label.setText(MODEL_NAMES[model]+' · '+str(result.config.solver.points)+' puntos temporales')
-        self.state_label.setText('Resultados actualizados · solución analítica y muestreo reproducible' if model == 'ensemble'
-                                 else 'Resultados actualizados · DOP853 y comparación con tolerancias más estrictas')
+        self.scene_note.setText(descriptions.get(model,MODELS[model].scene_note)+' Arrastra para girar; usa las herramientas para acercar.')
+        self.experiment_label.setText(MODEL_NAMES[model]+' · '+str(len(result.t))+' puntos · '+result.config.project_name[:100])
+        self.experiment_label.setToolTip(result.config.project_name)
+        self.state_label.setText('Resultados actualizados · DOP853 y comparación de refinamiento' if MODELS[model].numeric
+                                 else 'Resultados actualizados · consulta los supuestos y diagnósticos del modelo')
+        self.data_panel.set_result(result)
         self.dirty = False
         self.play_button.setEnabled(True); self.csv_button.setEnabled(True); self.png_button.setEnabled(True)
 
@@ -381,7 +488,9 @@ class MainWindow(QMainWindow):
 
     def _show_metrics(self, r):
         c, e = r.config, r.extra
-        if c.model == 'oscillator':
+        if 'metrics' in e:
+            values=e['metrics']
+        elif c.model == 'oscillator':
             energy0 = e['energy'][0]
             ratio = e['energy'][-1]/energy0 if energy0 > 0 else 0.
             values = [(f'{np.sqrt(c.stiffness/c.mass):.4g}', 'Frecuencia natural ω₀ · rad/s'),
@@ -402,7 +511,9 @@ class MainWindow(QMainWindow):
 
     def _show_precision(self, r):
         c, e = r.config, r.extra
-        if c.model == 'ensemble':
+        if 'diagnostic' in e:
+            body=e['diagnostic']
+        elif c.model == 'ensemble':
             lo, hi = e['interval']
             body = (f'<b>Solución analítica + Monte Carlo</b><br>Float64; N = {c.count}; semilla = {c.seed}. '
                     'Las tolerancias del integrador no intervienen en este modelo analítico.<br>'
@@ -448,8 +559,14 @@ class MainWindow(QMainWindow):
     def _seek(self, index):
         if self.result is not None:
             self.scene.set_frame(index)
-            units = '' if self.result.config.model == 'lorenz' else ' s'
-            self.time_label.setText(f't = {self.result.t[index]:.3f}'+units)
+            model=self.result.config.model
+            value=self.result.t[index]
+            if model=='quantum_barrier':text=f'x = {value:.5g} nm'
+            elif model=='logistic':text=f'n = {index}'
+            elif model in {'em_particle','two_body'}:text=f't = {value*1e9:.5g} ns'
+            elif model in {'lorenz','duffing'}:text=f't = {value:.5g}'
+            else:text=f't = {value:.5g} s'
+            self.time_label.setText(text)
 
     def save_project(self):
         try:
@@ -475,7 +592,10 @@ class MainWindow(QMainWindow):
     def apply_config(self, config):
         config.validate()
         self.loading = True
+        self.family_selector.setCurrentIndex(0)
+        self._filter_models()
         self.model_selector.setCurrentIndex(self.model_selector.findData(config.model))
+        self._configure_model(config.model,rebuild=True)
         for key, widget in self.fields.items():
             if hasattr(config, key):
                 widget.setValue(getattr(config, key))
@@ -483,9 +603,15 @@ class MainWindow(QMainWindow):
         self.fields['atol'].setValue(config.solver.atol)
         self.fields['max_step'].setValue(config.solver.max_step)
         self.fields['points'].setValue(config.solver.points)
+        for key,value in MODELS[config.model].values(config.parameters).items():
+            widget=self.dynamic_fields[key]
+            if isinstance(widget,QComboBox):widget.setCurrentIndex(widget.findData(value))
+            else:widget.setValue(value)
+        for key,widget in self.metadata_fields.items():widget.setText(getattr(config,key))
         self.notes.setPlainText(config.notes)
+        self._last_model=config.model
         self.loading = False
-        self._model_changed()
+        self._refresh_examples();self._mark_dirty()
 
     def export_csv(self):
         if self.result is None or self.dirty or self.worker is not None:
@@ -494,8 +620,11 @@ class MainWindow(QMainWindow):
         if not path:
             return
         try:
-            self.result.dataframe().to_csv(path, index=False, float_format='%.17g')
+            frame=self.data_panel.current_frame()
+            if frame is None:frame=self.result.dataframe()
+            frame.to_csv(path, index=False, float_format='%.17g')
             self.result.config.notes = self.notes.toPlainText()
+            for key,widget in self.metadata_fields.items():setattr(self.result.config,key,widget.text())
             self.result.config.save(Path(path).with_suffix('.experiment.json'))
             self.statusBar().showMessage('CSV y configuración guardados: '+path, 8000)
         except (ValueError, OSError) as error:
@@ -507,7 +636,7 @@ class MainWindow(QMainWindow):
         path, _ = QFileDialog.getSaveFileName(self, 'Exportar figura', 'figura.png', 'Imagen PNG (*.png)')
         if path:
             try:
-                canvas = self.analysis if self.tabs.currentIndex() == 1 else self.scene
+                canvas = self.analysis if self.tabs.currentIndex() == 1 else self.formulas if self.tabs.currentIndex() == 2 else self.scene
                 canvas.figure.savefig(path, dpi=220, facecolor=canvas.figure.get_facecolor())
                 self.statusBar().showMessage('Figura exportada: '+path, 8000)
             except OSError as error:

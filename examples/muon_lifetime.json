@@ -1,0 +1,38 @@
+{
+  "format_version": 2,
+  "model": "radioactive",
+  "duration": 1e-05,
+  "mass": 1.0,
+  "stiffness": 4.0,
+  "damping": 0.2,
+  "x0": 1.0,
+  "v0": 0.0,
+  "sigma": 10.0,
+  "rho": 28.0,
+  "beta": 2.6666666666666665,
+  "y0": 1.0,
+  "z0": 1.0,
+  "delta": 0.0001,
+  "count": 1000,
+  "seed": 42,
+  "stiffness_std": 0.4,
+  "position_std": 0.05,
+  "threshold": 0.5,
+  "project_name": "Población de muones en reposo",
+  "researcher": "",
+  "objective": "Vida media τ ≈ 2.1969811 μs; la semivida es τ·ln 2.",
+  "references": "OpenStax · Relatividad y cuántica: https://openstax.org/details/books/university-physics-volume-3; Particle Data Group · tablas y revisiones: https://pdg.lbl.gov/",
+  "parameters": {
+    "population": 10000,
+    "half_life": 1.5228312552084872e-06,
+    "efficiency": 1.0,
+    "background": 0.0
+  },
+  "notes": "Resultado esperado:\nVida media τ ≈ 2.1969811 μs; la semivida es τ·ln 2.",
+  "solver": {
+    "rtol": 1e-09,
+    "atol": 1e-11,
+    "max_step": 0.05,
+    "points": 1200
+  }
+}

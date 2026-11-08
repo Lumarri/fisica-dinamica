@@ -4,6 +4,7 @@ from matplotlib import colormaps
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d.art3d import Line3DCollection
+from catalog import MODELS
 
 BG = "#111c2e"
 FG = "#e2eaf5"
@@ -48,6 +49,8 @@ class SceneCanvas(PlotCanvas):
         self.marker = None
         self.plane_artists = []
         self.planes_visible = True
+        self.link_artist = None
+        self.extra_markers = []
 
     def draw_result(self, result):
         self.figure.clear()
@@ -55,6 +58,11 @@ class SceneCanvas(PlotCanvas):
         self.ax = ax = self.figure.add_subplot(111, projection="3d")
         style_axis(ax, True)
         self.plane_artists = []
+        self.link_artist = None
+        self.extra_markers = []
+        if 'visual' in result.extra:
+            self._draw_visual(result.extra['visual'], result.t)
+            return
         c, y, t = result.config, result.states, result.t
         if c.model == "lorenz":
             coords = y
@@ -98,6 +106,49 @@ class SceneCanvas(PlotCanvas):
                               marker="o", markersize=6, color=GOLD, markeredgecolor=FG)
         self.view("Perspectiva")
 
+    def _draw_visual(self, visual, parameter):
+        ax = self.ax
+        coords = visual['xyz']
+        self.coordinates = coords
+        self.figure.text(.03, .96, visual['title'], fontsize=10, color=FG)
+        all_coords = [coords]
+        for i, track in enumerate(visual.get('tracks', [])):
+            points = track['xyz']
+            color = [GOLD, BLUE, CYAN][i % 3]
+            ax.plot(*points.T, color=color, alpha=.75, lw=1.1)
+            all_coords.append(points)
+            if track.get('animate'):
+                marker, = ax.plot(*points[0].reshape(3,1), marker='o', color=color, markersize=5)
+                self.extra_markers.append((marker, points))
+        origins = np.asarray(visual.get('origins', []))
+        if len(origins):
+            ax.scatter(*origins.T, color=GOLD, s=35)
+            all_coords.append(origins)
+        if 'linkage' in visual:
+            self.linkage = visual['linkage']
+            self.link_artist, = ax.plot(*self.linkage[0].T, color=FG, lw=2, marker='o', markersize=5)
+            all_coords.append(self.linkage.reshape(-1,3))
+        points = coords.reshape(-1,1,3)
+        collection = Line3DCollection(np.concatenate([points[:-1],points[1:]],axis=1),cmap='winter',linewidth=1.6)
+        collection.set_array(parameter[:-1]);ax.add_collection3d(collection)
+        together = np.vstack(all_coords)
+        ranges=[]
+        for j in range(3):
+            lo, hi = np.min(together[:,j]), np.max(together[:,j])
+            margin=max((hi-lo)*.09, max(abs(lo),abs(hi))*.01, 1e-4)
+            ranges.append((lo-margin,hi+margin))
+        spatial = self.result.config.model in {'pendulum','double_pendulum','projectile','orbit','em_particle','rutherford','two_body'}
+        if spatial:
+            width=max(hi-lo for lo,hi in ranges)
+            ranges=[((lo+hi-width)/2,(lo+hi+width)/2) for lo,hi in ranges]
+        ax.set_xlim(*ranges[0]);ax.set_ylim(*ranges[1]);ax.set_zlim(*ranges[2])
+        ax.set_xlabel(visual['labels'][0],labelpad=8);ax.set_ylabel(visual['labels'][1],labelpad=8)
+        ax.set_zlabel(visual['labels'][2],labelpad=8)
+        ax.set_box_aspect((1,1,1) if spatial else (1,1,.85),zoom=.9)
+        self._draw_planes(ranges)
+        self.marker, = ax.plot(*coords[0].reshape(3,1),marker='o',markersize=6,color=CYAN,markeredgecolor=FG)
+        self.view('Perspectiva')
+
     def _draw_planes(self, ranges):
         x, y, z = [np.linspace(*r, 2) for r in ranges]
         xx, yy = np.meshgrid(x, y)
@@ -127,6 +178,10 @@ class SceneCanvas(PlotCanvas):
             return
         point = self.coordinates[index]
         self.marker.set_data_3d([point[0]], [point[1]], [point[2]])
+        for marker, points in self.extra_markers:
+            marker.set_data_3d(*points[index].reshape(3,1))
+        if self.link_artist is not None:
+            self.link_artist.set_data_3d(*self.linkage[index].T)
         self.draw_idle()
 
 
@@ -137,6 +192,10 @@ class AnalysisCanvas(PlotCanvas):
         a, b, d, e = axes.ravel()
         for ax in axes.ravel():
             style_axis(ax)
+        if 'charts' in result.extra:
+            self._draw_charts(axes.ravel(), result.extra['charts'])
+            self.draw_idle()
+            return
         c, y, t = result.config, result.states, result.t
         if c.model == "oscillator":
             a.plot(t, y[:, 0], color=CYAN, lw=1.4)
@@ -176,6 +235,24 @@ class AnalysisCanvas(PlotCanvas):
                   title="Estimación y Wilson 95 % para cada N")
         self.draw_idle()
 
+    def _draw_charts(self, axes, charts):
+        colors=[CYAN,BLUE,GOLD,'#c3a6ff']
+        for ax, spec in zip(axes,charts):
+            if 'band' in spec:
+                x,low,high=spec['band'];ax.fill_between(x,low,high,color=BLUE,alpha=.22)
+            for i, series in enumerate(spec['series']):
+                x,y=series['x'],series['y'];color=colors[i % len(colors)]
+                kind=series.get('kind','line');label=series.get('label','')
+                if kind=='scatter':ax.scatter(x,y,s=series.get('size',7),alpha=.65,color=color,label=label,rasterized=True)
+                elif kind=='hist':ax.hist(x,bins=35,color=color,alpha=.8,label=label)
+                elif kind=='bar':ax.bar(x,y,color=color,alpha=.75,label=label,width=.65)
+                else:ax.plot(x,y,color=color,lw=1.1,label=label,linestyle=series.get('linestyle','-'))
+            ax.set(xlabel=spec['xlabel'],ylabel=spec['ylabel'],title=spec['title'])
+            ax.set_yscale(spec.get('yscale','linear'))
+            if any(s.get('label') for s in spec['series']):
+                legend=ax.legend(fontsize=7,facecolor=BG,edgecolor='#2b3c54')
+                for text in legend.get_texts():text.set_color(FG)
+
 
 class FormulaCanvas(PlotCanvas):
     def __init__(self):
@@ -185,7 +262,9 @@ class FormulaCanvas(PlotCanvas):
     def draw_result(self, result):
         self.figure.clear()
         c = result.config
-        if c.model == "oscillator":
+        if MODELS[c.model].formulas:
+            formulas = MODELS[c.model].formulas
+        elif c.model == "oscillator":
             formulas = [(r"$m\ddot{x}+c\dot{x}+kx=0$", "Ecuación del movimiento"),
                         (r"$\dot{x}=v,\quad \dot{v}=-(kx+cv)/m$", "Sistema integrado"),
                         (r"$E=\frac{1}{2}mv^2+\frac{1}{2}kx^2,\quad \frac{dE}{dt}=-cv^2$", "Energía y disipación"),
@@ -202,6 +281,6 @@ class FormulaCanvas(PlotCanvas):
                         (r"$\hat p=\frac{1}{N}\sum_{i=1}^{N}\mathbb{1}[x_i(T)>a]$", "Probabilidad de superar el umbral a")]
         for index, (formula, label) in enumerate(formulas):
             y = .86-index*.235
-            self.figure.text(.04, y, formula, fontsize=15, color=CYAN)
+            self.figure.text(.04, y, formula, fontsize=13 if len(formula)>100 else 15, color=CYAN)
             self.figure.text(.04, y-.075, label, fontsize=9, color=MUTED)
         self.draw_idle()

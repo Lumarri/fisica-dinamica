@@ -1,0 +1,40 @@
+{
+  "format_version": 2,
+  "model": "two_body",
+  "duration": 1.0,
+  "mass": 1.0,
+  "stiffness": 4.0,
+  "damping": 0.2,
+  "x0": 1.0,
+  "v0": 0.0,
+  "sigma": 10.0,
+  "rho": 28.0,
+  "beta": 2.6666666666666665,
+  "y0": 1.0,
+  "z0": 1.0,
+  "delta": 0.0001,
+  "count": 1000,
+  "seed": 42,
+  "stiffness_std": 0.4,
+  "position_std": 0.05,
+  "threshold": 0.5,
+  "project_name": "Z⁰ → e⁺ + e⁻",
+  "researcher": "",
+  "objective": "En reposo, las energías de las hijas son aproximadamente M_Z/2.",
+  "references": "Particle Data Group · tablas y revisiones: https://pdg.lbl.gov/; OpenStax · Relatividad y cuántica: https://openstax.org/details/books/university-physics-volume-3",
+  "parameters": {
+    "parent_mass": 91187.6,
+    "daughter1": 0.51099895069,
+    "daughter2": 0.51099895069,
+    "parent_kinetic": 0.0,
+    "theta": 65.0,
+    "phi": 20.0
+  },
+  "notes": "Resultado esperado:\nEn reposo, las energías de las hijas son aproximadamente M_Z/2.",
+  "solver": {
+    "rtol": 1e-09,
+    "atol": 1e-11,
+    "max_step": 0.05,
+    "points": 1200
+  }
+}

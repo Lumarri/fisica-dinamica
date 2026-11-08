@@ -1,0 +1,38 @@
+{
+  "format_version": 2,
+  "model": "orbit",
+  "duration": 2.0,
+  "mass": 1.0,
+  "stiffness": 4.0,
+  "damping": 0.2,
+  "x0": 1.0,
+  "v0": 0.0,
+  "sigma": 10.0,
+  "rho": 28.0,
+  "beta": 2.6666666666666665,
+  "y0": 1.0,
+  "z0": 1.0,
+  "delta": 0.0001,
+  "count": 1000,
+  "seed": 42,
+  "stiffness_std": 0.4,
+  "position_std": 0.05,
+  "threshold": 0.5,
+  "project_name": "Órbita circular",
+  "researcher": "",
+  "objective": "El radio es constante y una vuelta tarda un período.",
+  "references": "OpenStax · Mecánica: https://openstax.org/details/books/university-physics-volume-1; NIST · constantes CODATA: https://physics.nist.gov/cuu/Constants/",
+  "parameters": {
+    "central_mass": 5.9722e+24,
+    "semimajor": 10000.0,
+    "eccentricity": 0.0,
+    "inclination": 35.0
+  },
+  "notes": "Resultado esperado:\nEl radio es constante y una vuelta tarda un período.",
+  "solver": {
+    "rtol": 1e-09,
+    "atol": 1e-11,
+    "max_step": 0.05,
+    "points": 1200
+  }
+}

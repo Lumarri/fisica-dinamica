@@ -1,0 +1,40 @@
+{
+  "format_version": 2,
+  "model": "two_body",
+  "duration": 1.0,
+  "mass": 1.0,
+  "stiffness": 4.0,
+  "damping": 0.2,
+  "x0": 1.0,
+  "v0": 0.0,
+  "sigma": 10.0,
+  "rho": 28.0,
+  "beta": 2.6666666666666665,
+  "y0": 1.0,
+  "z0": 1.0,
+  "delta": 0.0001,
+  "count": 1000,
+  "seed": 42,
+  "stiffness_std": 0.4,
+  "position_std": 0.05,
+  "threshold": 0.5,
+  "project_name": "π⁺ → μ⁺ + ν: laboratorio",
+  "researcher": "",
+  "objective": "El boost cambia energías y ángulos, conservando el cuatro-momento.",
+  "references": "Particle Data Group · tablas y revisiones: https://pdg.lbl.gov/; OpenStax · Relatividad y cuántica: https://openstax.org/details/books/university-physics-volume-3",
+  "parameters": {
+    "parent_mass": 139.57039,
+    "daughter1": 105.6583755,
+    "daughter2": 0.0,
+    "parent_kinetic": 300.0,
+    "theta": 65.0,
+    "phi": 20.0
+  },
+  "notes": "Resultado esperado:\nEl boost cambia energías y ángulos, conservando el cuatro-momento.",
+  "solver": {
+    "rtol": 1e-09,
+    "atol": 1e-11,
+    "max_step": 0.05,
+    "points": 1200
+  }
+}

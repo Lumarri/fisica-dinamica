@@ -1,0 +1,43 @@
+{
+  "format_version": 2,
+  "model": "double_pendulum",
+  "duration": 15.0,
+  "mass": 1.0,
+  "stiffness": 4.0,
+  "damping": 0.2,
+  "x0": 1.0,
+  "v0": 0.0,
+  "sigma": 10.0,
+  "rho": 28.0,
+  "beta": 2.6666666666666665,
+  "y0": 1.0,
+  "z0": 1.0,
+  "delta": 0.0001,
+  "count": 1000,
+  "seed": 42,
+  "stiffness_std": 0.4,
+  "position_std": 0.05,
+  "threshold": 0.5,
+  "project_name": "Péndulo doble energético",
+  "researcher": "",
+  "objective": "Movimiento complejo; conserva la energía aunque la trayectoria sea sensible.",
+  "references": "OpenStax · Mecánica: https://openstax.org/details/books/university-physics-volume-1",
+  "parameters": {
+    "m1": 1.0,
+    "m2": 1.0,
+    "l1": 1.0,
+    "l2": 1.0,
+    "gravity": 9.80665,
+    "theta1": 110.0,
+    "theta2": -20.0,
+    "w1": 0.0,
+    "w2": 0.0
+  },
+  "notes": "Resultado esperado:\nMovimiento complejo; conserva la energía aunque la trayectoria sea sensible.",
+  "solver": {
+    "rtol": 1e-09,
+    "atol": 1e-11,
+    "max_step": 0.05,
+    "points": 1200
+  }
+}

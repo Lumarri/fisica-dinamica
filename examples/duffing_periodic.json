@@ -1,0 +1,41 @@
+{
+  "format_version": 2,
+  "model": "duffing",
+  "duration": 100.0,
+  "mass": 1.0,
+  "stiffness": 4.0,
+  "damping": 0.2,
+  "x0": 1.0,
+  "v0": 0.0,
+  "sigma": 10.0,
+  "rho": 28.0,
+  "beta": 2.6666666666666665,
+  "y0": 1.0,
+  "z0": 1.0,
+  "delta": 0.0001,
+  "count": 1000,
+  "seed": 42,
+  "stiffness_std": 0.4,
+  "position_std": 0.05,
+  "threshold": 0.5,
+  "project_name": "Duffing: forzamiento débil",
+  "researcher": "",
+  "objective": "Compara la sección estroboscópica y el espectro con el caso de forzamiento mayor.",
+  "references": "SciPy · solve_ivp y DOP853: https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html",
+  "parameters": {
+    "alpha": -1.0,
+    "beta": 1.0,
+    "friction": 0.2,
+    "force": 0.1,
+    "frequency": 1.2,
+    "position": 0.1,
+    "velocity": 0.0
+  },
+  "notes": "Resultado esperado:\nCompara la sección estroboscópica y el espectro con el caso de forzamiento mayor.",
+  "solver": {
+    "rtol": 1e-09,
+    "atol": 1e-11,
+    "max_step": 0.05,
+    "points": 1200
+  }
+}

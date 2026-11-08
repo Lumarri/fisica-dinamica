@@ -1,0 +1,33 @@
+{
+  "format_version": 2,
+  "model": "ensemble",
+  "duration": 25.0,
+  "mass": 1.0,
+  "stiffness": 4.0,
+  "damping": 0.0,
+  "x0": 1.0,
+  "v0": 0.0,
+  "sigma": 10.0,
+  "rho": 28.0,
+  "beta": 2.6666666666666665,
+  "y0": 1.0,
+  "z0": 1.0,
+  "delta": 0.0001,
+  "count": 5000,
+  "seed": 42,
+  "stiffness_std": 0.4,
+  "position_std": 0.05,
+  "threshold": 0.5,
+  "project_name": "Probabilidad con 5000 realizaciones",
+  "researcher": "",
+  "objective": "El intervalo Wilson cuantifica el error de muestreo; compara con N = 100.",
+  "references": "Wilson (1927): https://doi.org/10.1080/01621459.1927.10502953",
+  "parameters": {},
+  "notes": "Resultado esperado:\nEl intervalo Wilson cuantifica el error de muestreo; compara con N = 100.",
+  "solver": {
+    "rtol": 1e-09,
+    "atol": 1e-11,
+    "max_step": 0.05,
+    "points": 1200
+  }
+}

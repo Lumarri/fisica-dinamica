@@ -7,9 +7,7 @@ import numpy as np
 import pandas as pd
 
 from models import SolverSettings, harmonic_ensemble, lorenz, oscillator
-
-MODEL_NAMES = {"oscillator": "Oscilador amortiguado", "lorenz": "Atractor de Lorenz",
-               "ensemble": "Conjunto probabilístico"}
+from catalog import MODELS, MODEL_NAMES, EXAMPLES
 
 
 @dataclass
@@ -32,6 +30,11 @@ class ExperimentConfig:
     stiffness_std: float = .4
     position_std: float = .05
     threshold: float = .5
+    project_name: str = 'Experimento sin título'
+    researcher: str = ''
+    objective: str = ''
+    references: str = ''
+    parameters: dict = field(default_factory=dict)
     notes: str = ""
     solver: SolverSettings = field(default_factory=SolverSettings)
 
@@ -39,15 +42,16 @@ class ExperimentConfig:
         if self.model not in MODEL_NAMES:
             raise ValueError("Modelo no reconocido.")
         numeric = [getattr(self, f.name) for f in fields(self)
-                   if f.name not in {"model", "notes", "solver"}]
+                   if f.name not in {"model", "notes", "solver", "parameters", "project_name", "researcher", "objective", "references"}]
         try:
             valid = np.isfinite(np.asarray(numeric, dtype=float)).all()
         except (TypeError, ValueError):
             valid = False
         if not valid:
             raise ValueError("Los parámetros deben ser números finitos.")
-        if not 0.5 <= self.duration <= 120:
-            raise ValueError("La duración debe estar entre 0.5 y 120.")
+        spec = MODELS[self.model]
+        if spec.timed and not spec.time_range[0] <= self.duration <= spec.time_range[1]:
+            raise ValueError(f"Duración fuera de rango: {spec.time_range[0]:g} a {spec.time_range[1]:g} {spec.time_unit}.")
         if not .05 <= self.mass <= 100 or not .05 <= self.stiffness <= 100 or not 0 <= self.damping <= 30:
             raise ValueError("Masa, rigidez o amortiguamiento fuera de rango.")
         if any(not -100 <= x <= 100 for x in [self.x0, self.v0, self.y0, self.z0]):
@@ -65,15 +69,23 @@ class ExperimentConfig:
         if self.model == "ensemble" and self.stiffness-np.sqrt(3)*self.stiffness_std <= 0:
             raise ValueError("Reduce la desviación de rigidez: K debe ser siempre positiva.")
         self.solver.validate()
+        for key in ['project_name', 'researcher', 'objective', 'references']:
+            if not isinstance(getattr(self, key), str) or len(getattr(self, key)) > 10000:
+                raise ValueError('Los datos del proyecto deben ser texto de hasta 10000 caracteres.')
+        parameters = spec.values(self.parameters)
+        if self.model not in {'oscillator','lorenz','ensemble'}:
+            from advanced_models import validate_model
+            validate_model(self.model, parameters, self)
+        self.parameters = parameters
 
     def to_dict(self):
         self.validate()
-        return {"format_version": 1, **asdict(self)}
+        return {"format_version": 2, **asdict(self)}
 
     @classmethod
     def from_dict(cls, data):
-        if not isinstance(data, dict) or data.get("format_version") != 1:
-            raise ValueError("Formato de proyecto no compatible (se espera versión 1).")
+        if not isinstance(data, dict) or data.get("format_version") not in {1, 2}:
+            raise ValueError("Formato de proyecto no compatible (se espera versión 1 o 2).")
         values = dict(data)
         values.pop("format_version")
         try:
@@ -105,6 +117,8 @@ class ExperimentResult:
     extra: dict = field(default_factory=dict)
 
     def dataframe(self):
+        if 'data' in self.extra:
+            return self.extra['data']
         if self.config.model == "ensemble":
             e = self.extra
             return pd.DataFrame({"realizacion": np.arange(1, self.config.count+1),
@@ -128,6 +142,9 @@ def run_experiment(config):
     config.validate()
     # Copia: el resultado siempre describe los parámetros que lo produjeron.
     config = ExperimentConfig.from_dict(config.to_dict())
+    if config.model not in {'oscillator','lorenz','ensemble'}:
+        from advanced_models import run_advanced
+        return ExperimentResult(config=config, **run_advanced(config))
     if config.model == "ensemble":
         config.damping = 0.
         e = harmonic_ensemble(count=config.count, seed=config.seed,
@@ -166,3 +183,17 @@ def run_experiment(config):
     scale = np.maximum(1., np.max(np.abs(reference), axis=0))
     extra["scaled_difference"] = float(np.max(np.abs(states-reference)/scale))
     return ExperimentResult(config, t, states, reference, extra)
+
+
+def example_config(key):
+    example = next((example for example in EXAMPLES if example.key == key), None)
+    if example is None:
+        raise ValueError('Ejemplo no reconocido.')
+    values = dict(model=example.model, duration=MODELS[example.model].duration,
+                  project_name=example.label, objective=example.expected,
+                  references='; '.join(label+': '+url for label,url in MODELS[example.model].references),
+                  parameters=dict(example.parameters), notes='Resultado esperado:\n'+example.expected)
+    values.update(example.values)
+    config = ExperimentConfig(**values)
+    config.validate()
+    return config

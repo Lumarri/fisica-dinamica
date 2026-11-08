@@ -32,7 +32,7 @@ jobs:
         shell: python
         run: |
           import subprocess
-          subprocess.run(['dist/Dynamis.exe', '--smoke-test', 'build-smoke'], check=True, timeout=120)
+          subprocess.run(['dist/Dynamis.exe', '--smoke-test', 'build-smoke'], check=True, timeout=240)
       - run: python -m pip freeze > build-smoke/dependencies.txt
       - uses: actions/upload-artifact@v4
         with:

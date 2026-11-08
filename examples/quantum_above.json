@@ -1,0 +1,39 @@
+{
+  "format_version": 2,
+  "model": "quantum_barrier",
+  "duration": 25.0,
+  "mass": 1.0,
+  "stiffness": 4.0,
+  "damping": 0.2,
+  "x0": 1.0,
+  "v0": 0.0,
+  "sigma": 10.0,
+  "rho": 28.0,
+  "beta": 2.6666666666666665,
+  "y0": 1.0,
+  "z0": 1.0,
+  "delta": 0.0001,
+  "count": 1000,
+  "seed": 42,
+  "stiffness_std": 0.4,
+  "position_std": 0.05,
+  "threshold": 0.5,
+  "project_name": "Energía sobre la barrera",
+  "researcher": "",
+  "objective": "La reflexión puede persistir por interferencia aunque E > V₀.",
+  "references": "OpenStax · Relatividad y cuántica: https://openstax.org/details/books/university-physics-volume-3; NIST · constantes CODATA: https://physics.nist.gov/cuu/Constants/",
+  "parameters": {
+    "energy": 8.0,
+    "barrier": 5.0,
+    "width": 0.4,
+    "effective_mass": 1.0,
+    "scan_max": 12.0
+  },
+  "notes": "Resultado esperado:\nLa reflexión puede persistir por interferencia aunque E > V₀.",
+  "solver": {
+    "rtol": 1e-09,
+    "atol": 1e-11,
+    "max_step": 0.05,
+    "points": 1200
+  }
+}

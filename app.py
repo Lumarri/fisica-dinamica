@@ -13,14 +13,15 @@ def smoke_test(app, directory):
     """Verifica también el ejecutable empaquetado: Qt, SciPy y las figuras."""
     from experiments import ExperimentConfig, run_experiment
     from models import SolverSettings
+    from catalog import MODELS, EXAMPLES
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
     window = MainWindow(auto_run=False)
     window.show()
-    report = {'status': 'failed', 'models': []}
+    report = {'status': 'failed', 'models': [], 'examples': len(EXAMPLES), 'edition': '2.0'}
     try:
-        for model in ['oscillator', 'lorenz', 'ensemble']:
-            config = ExperimentConfig(model=model, duration=4, count=100,
+        for model, spec in MODELS.items():
+            config = ExperimentConfig(model=model, duration=min(spec.duration,4), count=100,
                                       solver=SolverSettings(points=300))
             window.apply_config(config)
             window.accept_result(run_experiment(config))
