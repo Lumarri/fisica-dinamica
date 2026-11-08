@@ -2,6 +2,19 @@
 
 Laboratorio interactivo en español para explorar física, dinámica no lineal e incertidumbre. Primera versión funcional, orientada a experimentos reproducibles.
 
+## Abrir en VS Code
+
+Necesitas VS Code, Git y Python 3.11 o posterior en tu computadora.
+
+1. En VS Code pulsa **F1**, ejecuta **Git: Clone** (Git: Clonar) y pega `https://github.com/Lumarri/fisica-dinamica.git`.
+2. Elige una carpeta y abre el repositorio clonado. Instala las extensiones recomendadas de Python, Pylance y Python Debugger cuando el editor las ofrezca.
+3. Pulsa **F1** y ejecuta **Python: Create Environment**. Elige **Venv**, un Python 3.11 o posterior y `requirements.txt` para instalar las dependencias.
+4. Pulsa **F5** y selecciona **Física: ejecutar interfaz**. Abre la dirección local que aparece en la terminal, normalmente `http://localhost:8501`.
+
+Si ya tienes un entorno, usa **Python: Select Interpreter** y selecciona el Python de `.venv`. La configuración incluida permite descubrir las pruebas en el panel **Testing**. Para detener la aplicación, detén la depuración.
+
+Para subir tus cambios a GitHub, inicia sesión cuando VS Code lo solicite, crea un commit en **Control de código fuente** y usa **Sincronizar cambios**. La primera clonación establece la conexión del repositorio con GitHub.
+
 ## Ejecutar
 
 Requiere Python 3.11 o posterior.
