@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       QT_QPA_PLATFORM: offscreen
-      MPLCONFIGDIR: ${{ runner.temp }}/matplotlib
+      MPLCONFIGDIR: .matplotlib-cache
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
