@@ -1,0 +1,85 @@
+name: Publish verified Windows release
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Successful Build Windows desktop run ID
+        required: true
+      expected_sha:
+        description: Full commit SHA verified by that build
+        required: true
+      tag:
+        description: Release tag, for example v2.1.0
+        required: true
+permissions:
+  actions: read
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RUN_ID: ${{ inputs.run_id }}
+      EXPECTED_SHA: ${{ inputs.expected_sha }}
+      RELEASE_TAG: ${{ inputs.tag }}
+    steps:
+      - name: Validate the build provenance
+        shell: python
+        run: |
+          import json, os, re, subprocess
+          repo = os.environ['GITHUB_REPOSITORY']
+          run_id = os.environ['RUN_ID']
+          sha = os.environ['EXPECTED_SHA']
+          tag = os.environ['RELEASE_TAG']
+          assert run_id.isdigit()
+          assert re.fullmatch(r'[0-9a-f]{40}', sha)
+          assert re.fullmatch(r'v[0-9]+\.[0-9]+\.[0-9]+', tag)
+          run = json.loads(subprocess.check_output(['gh', 'api', f'repos/{repo}/actions/runs/{run_id}']))
+          assert run['status'] == 'completed' and run['conclusion'] == 'success'
+          assert run['head_sha'] == sha and run['head_branch'] == 'main'
+          assert run['event'] == 'push'
+          assert run['path'] == '.github/workflows/windows.yml'
+          assert run['head_repository']['full_name'] == repo
+          print('Successful trusted Windows build verified.')
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Dynamis-Windows-x64
+          path: release-package
+          github-token: ${{ github.token }}
+          run-id: ${{ inputs.run_id }}
+      - name: Verify the packaged report and executable
+        shell: python
+        run: |
+          from pathlib import Path
+          import json, hashlib, struct
+          root = Path('release-package')
+          report = json.loads((root/'build-smoke/verification.json').read_text(encoding='utf-8'))
+          assert report['status'] == 'passed' and len(report['models']) > 0
+          assert report['font_families']['interface'].startswith('Space Grotesk')
+          assert 'cmr10' in report['font_families']['numbers'].lower()
+          binary = (root/'dist/Dynamis.exe').read_bytes()
+          assert binary[:2] == b'MZ'
+          pe = struct.unpack_from('<I', binary, 0x3c)[0]
+          assert binary[pe:pe+4] == b'PE\x00\x00'
+          assert struct.unpack_from('<H', binary, pe+4)[0] == 0x8664
+          sha = hashlib.sha256(binary).hexdigest()
+          (root/'SHA256SUMS.txt').write_text(sha+'  Dynamis.exe\n', encoding='utf-8')
+          print(f'Windows x64 verified: {len(report["models"])} models; SHA256 {sha}')
+      - name: Publish the verified executable
+        shell: python
+        run: |
+          import json, os, subprocess
+          repo = os.environ['GITHUB_REPOSITORY']
+          tag = os.environ['RELEASE_TAG']
+          sha = os.environ['EXPECTED_SHA']
+          assets = ['release-package/dist/Dynamis.exe', 'release-package/SHA256SUMS.txt', 'release-package/build-smoke/verification.json']
+          existing = subprocess.run(['gh', 'release', 'view', tag, '--repo', repo, '--json', 'url'], capture_output=True, text=True)
+          if existing.returncode == 0:
+              ref = json.loads(subprocess.check_output(['gh', 'api', f'repos/{repo}/git/ref/tags/{tag}']))
+              assert ref['object']['type'] == 'commit' and ref['object']['sha'] == sha
+              subprocess.run(['gh', 'release', 'upload', tag, *assets, '--repo', repo, '--clobber'], check=True)
+          else:
+              assert 'release not found' in existing.stderr.lower() or 'http 404' in existing.stderr.lower(), existing.stderr
+              subprocess.run(['gh', 'release', 'create', tag, *assets, '--repo', repo, '--target', sha,
+                              '--title', 'Dynamis '+tag.removeprefix('v'), '--notes-file', 'docs/CHANGELOG.md', '--latest'], check=True)
