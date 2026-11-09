@@ -20,7 +20,7 @@ def main():
            f'Incluye {len(MODELS)} modelos y {len(EXAMPLES)} proyectos de ejemplo. El catálogo de referencia contiene {len(PARTICLES)} especies de partículas.',
            '', '## Uso de las unidades y de la precisión','',
            'Los rangos de cada campo no garantizan que todas sus combinaciones sean válidas. La aplicación comprueba también condiciones conjuntas. Las figuras son espaciales, de estados o complejas según indique cada modelo. En escenas espaciales se aplica la misma escala a los tres ejes.',
-           '', 'Las integraciones numéricas usan DOP853 y una segunda solución refinada. Las comparaciones de tolerancia no garantizan el error global. Los modelos analíticos conservan las limitaciones de float64 y del muestreo de salida.',
+           '', 'Las ecuaciones diferenciales ordinarias usan DOP853 y una segunda solución refinada. N cuerpos usa Velocity Verlet y comparación con Δt/2; el gas usa impulsos elásticos aproximados por subpasos. Ambos respetan el paso máximo y subdividen cada intervalo de salida. Las comparaciones de tolerancia no garantizan el error global. Los modelos analíticos conservan las limitaciones de float64 y del muestreo de salida.',
            '', 'Los valores de referencia de partículas son nominales; no incluyen incertidumbres. Consulta PDG o CODATA para un trabajo experimental de precisión. Los quarks tienen masas dependientes del esquema y escala; a los estados de sabor de neutrinos no se les fija aquí una masa.', '']
     for index,(key,spec) in enumerate(MODELS.items(),1):
         lines += [f'## {index}. {spec.name}', '',f'**Área:** {spec.family}.', '',spec.summary,'',
@@ -51,6 +51,12 @@ def main():
                 lines+=['- ['+example.label+'](../examples/'+example.key+'.json): '+example.expected]
         lines+=['','### Referencias','']+['- ['+label+']('+url+')' for label,url in spec.references]+['']
     lines+=['## Condiciones adicionales y lectura de diagnósticos','',
+        '- **Gas 3D:** hasta 96 esferas, radio < L/6 y volumen ocupado ≤ 8 %. El paso limita cada desplazamiento a 0.3r. Los contactos se corrigen tras el avance, con dos pasadas por pares; compara observables al reducir Δt. Presión = impulso acumulado/(6L²t). La energía conservada no garantiza exactitud de tiempos de choque.',
+        '- **N cuerpos:** hasta 128 partículas, potencial suavizado y fronteras abiertas. Se controla Δt·ω ≤ 0.5 con una escala conservadora de la fuerza. Conservación de energía, momento y momento angular; comparación de posiciones a Δt/2. No hay colisiones, fusiones ni radiación. Las unidades son reducidas y no hay conversión SI automática.',
+        '- **Sistemas ampliados:** Rössler, Van der Pol, Lotka–Volterra, SIR, Hénon y Kuramoto incluyen condiciones vecinas y barrido de un parámetro. Cada valor se inicia de forma independiente; los extremos son muestreados en un horizonte finito. Los escapes/fallos se marcan NaN en el CSV. La distancia de estados no es un exponente de Lyapunov.',
+        '- **SIR:** S₀+I₀ ≤ 1; la condición vecina transfiere δ de S a I. Se controla S+I+R=1. El barrido busca extremos de I en el intervalo completo.',
+        '- **Hénon:** al menos 50 iteraciones tras descartar el transitorio. La órbita principal o vecina falla si supera |estado|=10⁶; el barrido registra los valores escapados sin unirlos.',
+        '- **Kuramoto:** frecuencias normales fijas por semilla, acoplamiento global y fases sin envolver. R es coherencia, no probabilidad. La distancia vecina se calcula con diferencias angulares mínimas.',
         '- **Campo E/B:** límite de 2000 unidades del reloj interno para mantener una simulación interactiva. Reduce campos o tiempo si se supera. No se calculan radiación, colisiones ni pérdida por decaimiento de la partícula seguida.',
         '- **Rutherford:** K/(mc²) ≤ 0.05. La masa del blanco se considera infinita; A solo calcula un radio orientativo. Si el acercamiento llega al radio nuclear, el potencial puntual no basta para interpretar ese régimen.',
         '- **Dos cuerpos:** M ≥ m₁+m₂ y boost γ ≤ 10⁶. Se usan componentes de cono de luz para reducir cancelación numérica; reconstruir masas como E²−p² a boosts grandes puede perder precisión. El barrido angular no asigna una probabilidad de emisión.',

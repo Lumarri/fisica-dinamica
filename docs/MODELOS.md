@@ -1,13 +1,13 @@
 # Guía de modelos y ejemplos · DYNAMIS 2
 
 Esta guía acompaña a las pestañas **Fórmulas y precisión**, **Datos** y **Modelos y ejemplos** del programa.
-Incluye 15 modelos y 34 proyectos de ejemplo. El catálogo de referencia contiene 28 especies de partículas.
+Incluye 23 modelos y 52 proyectos de ejemplo. El catálogo de referencia contiene 28 especies de partículas.
 
 ## Uso de las unidades y de la precisión
 
 Los rangos de cada campo no garantizan que todas sus combinaciones sean válidas. La aplicación comprueba también condiciones conjuntas. Las figuras son espaciales, de estados o complejas según indique cada modelo. En escenas espaciales se aplica la misma escala a los tres ejes.
 
-Las integraciones numéricas usan DOP853 y una segunda solución refinada. Las comparaciones de tolerancia no garantizan el error global. Los modelos analíticos conservan las limitaciones de float64 y del muestreo de salida.
+Las ecuaciones diferenciales ordinarias usan DOP853 y una segunda solución refinada. N cuerpos usa Velocity Verlet y comparación con Δt/2; el gas usa impulsos elásticos aproximados por subpasos. Ambos respetan el paso máximo y subdividen cada intervalo de salida. Las comparaciones de tolerancia no garantizan el error global. Los modelos analíticos conservan las limitaciones de float64 y del muestreo de salida.
 
 Los valores de referencia de partículas son nominales; no incluyen incertidumbres. Consulta PDG o CODATA para un trabajo experimental de precisión. Los quarks tienen masas dependientes del esquema y escala; a los estados de sabor de neutrinos no se les fija aquí una masa.
 
@@ -810,8 +810,514 @@ $$T(E=V_0)=[1+mV_0a^2/(2\hbar^2)]^{-1}$$
 - [OpenStax · Relatividad y cuántica](https://openstax.org/details/books/university-physics-volume-3)
 - [NIST · constantes CODATA](https://physics.nist.gov/cuu/Constants/)
 
+## 16. Gas de esferas elásticas
+
+**Área:** Simuladores de partículas.
+
+Muchas esferas en un recipiente 3D: choques, rapidez, energía y presión calculada en las paredes.
+
+**Escena:** Posiciones físicas en metros. Paredes fijas; hasta cinco colas de trayectoria. Los puntos indican centros y su tamaño dibujado es ilustrativo.
+
+**Duración:** 8.0 s por defecto; rango 0.1 a 40.
+
+| Campo | Unidad | Valor por defecto | Rango / opciones | Significado |
+| --- | --- | --- | --- | --- |
+| Número de esferas | adimensional | 36 | 2 a 96 | Masas y radios iguales; coste por pares O(N²). |
+| Lado del recipiente L | m | 2.0 | 0.5 a 10 | Recipiente cúbico centrado en el origen. |
+| Radio físico r | m | 0.06 | 0.005 a 0.3 | Interviene en los choques, aunque el marcador 3D es ilustrativo. |
+| Masa de cada esfera | kg | 0.01 | 0.0001 a 10 | Masa común para impulsos y energía. |
+| Rapidez RMS inicial | m/s | 1.0 | 0.05 a 5 | Velocidades normales con momento inicial nulo y RMS reescalada. |
+| Paso máximo Δt | s | 0.005 | 0.0001 a 0.05 | Se limita además para que el desplazamiento no supere 0.3r. |
+
+### Supuestos
+
+- Modelo clásico no relativista de esferas iguales, duras y lisas; sin gravedad.
+- Choques y paredes elásticos; contacto aproximado por subpasos y corrección de penetración.
+- Inicialización diluida sin solapamientos: volumen ocupado ≤ 8 %, radio < L/6.
+- Presión acumulada por impulso; referencia ideal diluida 2K/(3V).
+
+### Preguntas para investigar
+
+- Duplica la rapidez RMS: ¿cómo cambia la energía y la presión?
+- Reduce Δt a la mitad y compara presión media y conteo de choques.
+
+### Ecuaciones
+
+Energía cinética de las esferas:
+
+$$K=\frac{m}{2}\sum_i |\mathbf{v}_i|^2$$
+
+Impulso elástico entre masas iguales; j recibe el opuesto:
+
+$$\mathbf{v}_i^\prime=\mathbf{v}_i-[(\mathbf{v}_i-\mathbf{v}_j)\cdot\mathbf{n}]\mathbf{n}$$
+
+Presión media acumulada sobre las seis paredes:
+
+$$P(t)=\frac{\sum |\Delta p_{\rm pared}|}{6L^2t}$$
+
+Referencia cinética de gas diluido:
+
+$$P_{\rm diluido}=2K/(3L^3)$$
+
+### Ejemplos
+
+- [Gas diluido: choques y presión](../examples/gas_dilute.json): La energía se conserva; la presión acumulada fluctúa y se aproxima a la referencia diluida.
+- [Gas: duplicar rapidez](../examples/gas_fast.json): Al duplicar RMS se cuadruplica K; compara presiones con igual duración.
+- [Dos esferas y el recipiente](../examples/gas_pair.json): Sigue cada centro y observa intercambios de momento entre esferas y paredes.
+
+### Referencias
+
+- [OpenStax · Mecánica](https://openstax.org/details/books/university-physics-volume-1)
+
+## 17. N cuerpos: gravedad y cargas
+
+**Área:** Simuladores de partículas.
+
+Partículas con fuerzas mutuas, potencial suavizado, momento, energía y comparación de pasos.
+
+**Escena:** Posiciones en unidades reducidas; no hay paredes. En modo eléctrico el color distingue signos. Colas para hasta ocho partículas.
+
+**Duración:** 6.0 uT por defecto; rango 0.1 a 30.
+
+| Campo | Unidad | Valor por defecto | Rango / opciones | Significado |
+| --- | --- | --- | --- | --- |
+| Número de partículas | adimensional | 40 | 2 a 128 | Interacciones directas por pares O(N²). |
+| Interacción | adimensional | Gravedad atractiva | Gravedad atractiva, Cargas de signos alternos | Gravedad: Uij=−g·m²/√(r²+ε²). Eléctrica: Uij=k·qi·qj/√(r²+ε²). |
+| Geometría inicial | adimensional | Disco delgado | Disco delgado, Nube 3D | Distribución aleatoria reproducible, centrada en el origen. |
+| Masa por partícula | uM | 0.02 | 0.001 a 1 | Masas iguales; unidades reducidas, sin conversión SI automática. |
+| Magnitud de carga \|q\| | uQ | 0.08 | 0 a 0.5 | Solo interviene en el modo eléctrico; alterna signos. |
+| Acoplamiento g o k | reducido | 1.0 | 0.01 a 5 | Constante de fuerza en las unidades reducidas elegidas. |
+| Suavizado ε | uL | 0.12 | 0.03 a 0.5 | Parte del potencial; evita singularidades. No es una tolerancia numérica. |
+| Escala de radio inicial | uL | 1.0 | 0.3 a 5 | Radio máximo antes de centrar y aplanar el disco. |
+| Rapidez tangencial inicial | uL/uT | 0.35 | 0 a 2 | Rotación alrededor del eje Z. |
+| Dispersión RMS de rapidez | uL/uT | 0.1 | 0 a 2 | Componente aleatoria normal; se elimina la velocidad del centro de masa. |
+| Paso máximo Δt | uT | 0.005 | 0.0001 a 0.03 | Velocity Verlet, repetido con Δt/2 para diagnosticar convergencia. |
+
+### Supuestos
+
+- Partículas clásicas iguales con potencial de Plummer suavizado; fronteras abiertas.
+- uE = uM·uL²/uT²; las magnitudes no se convierten automáticamente a SI.
+- Sin impactos, fusiones, radiación ni relatividad; las partículas pueden atravesarse.
+- La gravedad y las cargas eléctricas son modelos clásicos; no incluyen teoría cuántica de campos.
+
+### Preguntas para investigar
+
+- Compara nube y disco conservando la semilla.
+- ¿Cómo cambian energía y estructura al reducir ε y Δt?
+- En modo eléctrico, compara nube con carga cero y con signos alternos.
+
+### Ecuaciones
+
+Cij = −g mi mj en gravedad; k qi qj en electrostática:
+
+$$U_{ij}=C_{ij}/\sqrt{r_{ij}^2+\epsilon^2}$$
+
+Fuerza central, con rij = ri − rj:
+
+$$\mathbf{F}_{ij}=C_{ij}\mathbf{r}_{ij}/(r_{ij}^2+\epsilon^2)^{3/2}$$
+
+Primer paso de Velocity Verlet:
+
+$$\mathbf{r}_{n+1}=\mathbf{r}_n+h\mathbf{v}_n+\frac{h^2}{2}\mathbf{a}_n$$
+
+Segundo paso; se comparan h y h/2:
+
+$$\mathbf{v}_{n+1}=\mathbf{v}_n+\frac{h}{2}(\mathbf{a}_n+\mathbf{a}_{n+1})$$
+
+### Ejemplos
+
+- [Disco de partículas gravitantes](../examples/gravity_disk.json): Investiga la estructura colectiva y verifica energía, momento y comparación Δt/2.
+- [Colapso de nube suavizada](../examples/gravity_cloud.json): Con poca velocidad inicial la gravedad contrae la nube; ε evita singularidades.
+- [Nube de cargas alternas](../examples/electric_cloud.json): Cargas opuestas se atraen y las iguales se repelen; la fuerza está suavizada.
+
+### Referencias
+
+- [OpenStax · Mecánica](https://openstax.org/details/books/university-physics-volume-1)
+- [OpenStax · Electromagnetismo](https://openstax.org/details/books/university-physics-volume-2)
+
+## 18. Atractor de Rössler
+
+**Área:** Caos y dinámica.
+
+Atractor 3D, trayectoria vecina y barrido del parámetro c.
+
+**Escena:** Espacio de estados adimensional (x, y, z). Ámbar: condición inicial vecina.
+
+**Duración:** 60.0 adimensional por defecto; rango 0.5 a 120.
+
+| Campo | Unidad | Valor por defecto | Rango / opciones | Significado |
+| --- | --- | --- | --- | --- |
+| Parámetro a | adimensional | 0.2 | 0.05 a 0.4 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Parámetro b | adimensional | 0.2 | 0.05 a 0.5 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Parámetro c | adimensional | 5.7 | 1 a 10 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Estado inicial x | adimensional | 0.1 | -5 a 5 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Estado inicial y | adimensional | 0.1 | -5 a 5 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Estado inicial z | adimensional | 0.1 | 0 a 5 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Perturbación inicial δ | adimensional | 1e-05 | 1e-08 a 0.01 | Desplazamiento de la primera variable; en SIR transfiere δ de S a I conservando la población. |
+| Inicio del tramo final / T | adimensional | 0.5 | 0 a 0.9 | Fracción de tiempo descartada en fase y barrido. SIR usa todo el intervalo para buscar el pico de I. |
+| Barrido: c mínimo | adimensional | 2.0 | 1 a 10 | Inicio del barrido independiente. |
+| Barrido: c máximo | adimensional | 6.0 | 1 a 10 | Final del barrido independiente. |
+| Valores en el barrido | adimensional | 12 | 4 a 50 | Cada valor empieza desde la misma condición inicial. |
+
+### Supuestos
+
+- Variables y tiempo adimensionales; modelo determinista reducido.
+- La distancia entre trayectorias no es un exponente de Lyapunov.
+- El barrido muestra extremos muestreados a tiempo finito; no prueba una bifurcación asintótica.
+
+### Preguntas para investigar
+
+- Compara c=2 y c=5.7.
+- Aumenta la duración y observa cómo cambia el barrido.
+
+### Ecuaciones
+
+Evolución de x:
+
+$$\dot{x}=-y-z$$
+
+Evolución de y:
+
+$$\dot{y}=x+ay$$
+
+Evolución de z:
+
+$$\dot{z}=b+z(x-c)$$
+
+Distancia entre estados vecinos:
+
+$$d(t)=\|\mathbf{u}_\delta(t)-\mathbf{u}(t)\|_2$$
+
+### Ejemplos
+
+- [Rössler: atractor clásico](../examples/rossler_classic.json): Observa la estructura espiral y la separación de estados vecinos.
+- [Rössler: c bajo](../examples/rossler_low.json): Compara el régimen de c=2 con el atractor de c=5.7.
+
+### Referencias
+
+- [Rössler (1976)](https://doi.org/10.1016/0375-9601(76)90101-8)
+- [SciPy · solve_ivp y DOP853](https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html)
+
+## 19. Oscilador de Van der Pol
+
+**Área:** Caos y dinámica.
+
+Ciclo límite y oscilación de relajación con campo de direcciones y barrido de μ.
+
+**Escena:** Espacio ampliado (x, v, t). El tercer eje representa tiempo, no una coordenada física.
+
+**Duración:** 40.0 adimensional por defecto; rango 0.5 a 120.
+
+| Campo | Unidad | Valor por defecto | Rango / opciones | Significado |
+| --- | --- | --- | --- | --- |
+| No linealidad μ | adimensional | 1.0 | 0 a 10 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Posición inicial | adimensional | 0.2 | -5 a 5 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Velocidad inicial | adimensional | 0.0 | -5 a 5 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Perturbación inicial δ | adimensional | 1e-05 | 1e-08 a 0.01 | Desplazamiento de la primera variable; en SIR transfiere δ de S a I conservando la población. |
+| Inicio del tramo final / T | adimensional | 0.5 | 0 a 0.9 | Fracción de tiempo descartada en fase y barrido. SIR usa todo el intervalo para buscar el pico de I. |
+| Barrido: μ mínimo | adimensional | 0.0 | 0 a 10 | Inicio del barrido independiente. |
+| Barrido: μ máximo | adimensional | 5.0 | 0 a 10 | Final del barrido independiente. |
+| Valores en el barrido | adimensional | 12 | 4 a 50 | Cada valor empieza desde la misma condición inicial. |
+
+### Supuestos
+
+- Variables y tiempo adimensionales; modelo determinista reducido.
+- La distancia entre trayectorias no es un exponente de Lyapunov.
+- El barrido muestra extremos muestreados a tiempo finito; no prueba una bifurcación asintótica.
+
+### Preguntas para investigar
+
+- Compara μ=0, μ=1 y μ=8.
+- ¿Convergen dos amplitudes iniciales al mismo ciclo límite?
+
+### Ecuaciones
+
+Definición de velocidad:
+
+$$\dot{x}=v$$
+
+Amortiguamiento no lineal:
+
+$$\dot{v}=\mu(1-x^2)v-x$$
+
+Ecuación de Van der Pol:
+
+$$\ddot{x}-\mu(1-x^2)\dot{x}+x=0$$
+
+E=(x²+v²)/2: energía inyectada o disipada:
+
+$$\dot{E}=\mu(1-x^2)v^2$$
+
+### Ejemplos
+
+- [Van der Pol: ciclo límite](../examples/vdp_cycle.json): Las oscilaciones alcanzan una amplitud sostenida por el amortiguamiento no lineal.
+- [Van der Pol: relajación](../examples/vdp_relaxation.json): Con μ=8 aparecen tramos lentos y transiciones rápidas.
+
+### Referencias
+
+- [Scholarpedia · sistemas dinámicos](http://www.scholarpedia.org/article/Dynamical_systems)
+- [SciPy · solve_ivp y DOP853](https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html)
+
+## 20. Lotka–Volterra: presa y depredador
+
+**Área:** Caos y dinámica.
+
+Poblaciones continuas acopladas, integral primera, campo de direcciones y barrido del crecimiento.
+
+**Escena:** Espacio ampliado (presas, depredadores, t), con poblaciones adimensionales continuas.
+
+**Duración:** 30.0 adimensional por defecto; rango 0.5 a 120.
+
+| Campo | Unidad | Valor por defecto | Rango / opciones | Significado |
+| --- | --- | --- | --- | --- |
+| Crecimiento de presas α | adimensional | 1.1 | 0.05 a 3 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Depredación β | adimensional | 0.4 | 0.05 a 2 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Conversión δ | adimensional | 0.1 | 0.05 a 2 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Mortalidad γ | adimensional | 0.4 | 0.05 a 2 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Presas iniciales | adimensional | 4.0 | 0.05 a 15 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Depredadores iniciales | adimensional | 2.0 | 0.05 a 15 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Perturbación inicial δ | adimensional | 1e-05 | 1e-08 a 0.01 | Desplazamiento de la primera variable; en SIR transfiere δ de S a I conservando la población. |
+| Inicio del tramo final / T | adimensional | 0.5 | 0 a 0.9 | Fracción de tiempo descartada en fase y barrido. SIR usa todo el intervalo para buscar el pico de I. |
+| Barrido: α mínimo | adimensional | 0.5 | 0.05 a 3 | Inicio del barrido independiente. |
+| Barrido: α máximo | adimensional | 2.0 | 0.05 a 3 | Final del barrido independiente. |
+| Valores en el barrido | adimensional | 12 | 4 a 50 | Cada valor empieza desde la misma condición inicial. |
+
+### Supuestos
+
+- Variables y tiempo adimensionales; modelo determinista reducido.
+- La distancia entre trayectorias no es un exponente de Lyapunov.
+- El barrido muestra extremos muestreados a tiempo finito; no prueba una bifurcación asintótica.
+- Sin capacidad de carga, migración ni ruido demográfico.
+
+### Preguntas para investigar
+
+- Sitúa las poblaciones en el equilibrio y comprueba que permanecen constantes.
+- ¿Qué ocurre al aumentar la mortalidad del depredador?
+
+### Ecuaciones
+
+Crecimiento y depredación de presas:
+
+$$\dot{x}=\alpha x-\beta xy$$
+
+Conversión y mortalidad de depredadores:
+
+$$\dot{y}=\delta xy-\gamma y$$
+
+Equilibrio de coexistencia:
+
+$$(x_*,y_*)=(\gamma/\delta,\alpha/\beta)$$
+
+Integral primera para x,y positivos:
+
+$$H=\delta x-\gamma\ln x+\beta y-\alpha\ln y$$
+
+### Ejemplos
+
+- [Presa y depredador: ciclos](../examples/lv_cycles.json): Las poblaciones oscilan con desfase; la integral primera se conserva.
+- [Presa y depredador: equilibrio](../examples/lv_equilibrium.json): x=γ/δ e y=α/β dan un estado estacionario.
+
+### Referencias
+
+- [Scholarpedia · sistemas dinámicos](http://www.scholarpedia.org/article/Dynamical_systems)
+- [SciPy · solve_ivp y DOP853](https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html)
+
+## 21. SIR: dinámica de poblaciones
+
+**Área:** Caos y dinámica.
+
+Fracciones susceptible, infectada y recuperada; conservación, umbral y barrido de contagio.
+
+**Escena:** Espacio de estados (S, I, R): fracciones de población, no posiciones físicas.
+
+**Duración:** 80.0 adimensional por defecto; rango 0.5 a 120.
+
+| Campo | Unidad | Valor por defecto | Rango / opciones | Significado |
+| --- | --- | --- | --- | --- |
+| Tasa de infección β | adimensional | 0.35 | 0.01 a 2 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Tasa de recuperación γ | adimensional | 0.1 | 0.01 a 2 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Fracción susceptible inicial | adimensional | 0.99 | 0.01 a 1 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Fracción infectada inicial | adimensional | 0.01 | 0 a 0.99 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Perturbación inicial δ | adimensional | 1e-05 | 1e-08 a 0.01 | Desplazamiento de la primera variable; en SIR transfiere δ de S a I conservando la población. |
+| Inicio del tramo final / T | adimensional | 0.5 | 0 a 0.9 | Fracción de tiempo descartada en fase y barrido. SIR usa todo el intervalo para buscar el pico de I. |
+| Barrido: β mínimo | adimensional | 0.05 | 0.01 a 2 | Inicio del barrido independiente. |
+| Barrido: β máximo | adimensional | 0.8 | 0.01 a 2 | Final del barrido independiente. |
+| Valores en el barrido | adimensional | 12 | 4 a 50 | Cada valor empieza desde la misma condición inicial. |
+
+### Supuestos
+
+- Variables y tiempo adimensionales; modelo determinista reducido.
+- La distancia entre trayectorias no es un exponente de Lyapunov.
+- El barrido muestra extremos muestreados a tiempo finito; no prueba una bifurcación asintótica.
+- Población cerrada homogénea; inmunidad permanente y tasas constantes.
+- Modelo didáctico; no está calibrado para decisiones clínicas.
+
+### Preguntas para investigar
+
+- Compara β/γ por debajo y por encima de 1.
+- ¿Cómo cambia el pico si aumenta la fracción recuperada inicial?
+
+### Ecuaciones
+
+Susceptibles:
+
+$$\dot{S}=-\beta SI$$
+
+Infectados:
+
+$$\dot{I}=\beta SI-\gamma I$$
+
+Recuperados y conservación:
+
+$$\dot{R}=\gamma I,\quad S+I+R=1$$
+
+Umbral efectivo de crecimiento:
+
+$$\mathcal{R}_0=\beta/\gamma,\quad \dot{I}>0\ \Leftrightarrow\ \mathcal{R}_0S>1$$
+
+### Ejemplos
+
+- [SIR: crecimiento y recuperación](../examples/sir_wave.json): I crece mientras (β/γ)S>1; S+I+R permanece en uno.
+- [SIR: bajo el umbral](../examples/sir_below.json): Con β/γ<1 la fracción infectada decrece desde el inicio.
+
+### Referencias
+
+- [Kermack y McKendrick (1927)](https://doi.org/10.1098/rspa.1927.0118)
+- [SciPy · solve_ivp y DOP853](https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html)
+
+## 22. Mapa de Hénon
+
+**Área:** Caos y dinámica.
+
+Mapa discreto bidimensional: atractor, sensibilidad y barrido de a con detección de escapes.
+
+**Escena:** Espacio ampliado (x, y, n). n es el índice de iteración. El análisis descarta el transitorio configurado.
+
+**Variable de salida:** iteración. No se impone una duración temporal.
+
+| Campo | Unidad | Valor por defecto | Rango / opciones | Significado |
+| --- | --- | --- | --- | --- |
+| Parámetro a | adimensional | 1.4 | 0.5 a 1.5 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Parámetro b | adimensional | 0.3 | 0 a 0.4 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Estado inicial x | adimensional | 0.1 | -0.5 a 0.5 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Estado inicial y | adimensional | 0.1 | -0.5 a 0.5 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Iteraciones | adimensional | 1600 | 200 a 5000 | Longitud de la órbita del mapa elegida para análisis. |
+| Transitorio a descartar | adimensional | 300 | 0 a 4500 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Perturbación inicial δ | adimensional | 1e-05 | 1e-08 a 0.01 | Desplazamiento de la primera variable; en SIR transfiere δ de S a I conservando la población. |
+| Barrido: a mínimo | adimensional | 1.0 | 0.5 a 1.5 | Inicio del barrido independiente. |
+| Barrido: a máximo | adimensional | 1.4 | 0.5 a 1.5 | Final del barrido independiente. |
+| Valores en el barrido | adimensional | 12 | 4 a 50 | Cada valor empieza desde la misma condición inicial. |
+
+### Supuestos
+
+- Variables y tiempo adimensionales; modelo determinista reducido.
+- La distancia entre trayectorias no es un exponente de Lyapunov.
+- El barrido muestra extremos muestreados a tiempo finito; no prueba una bifurcación asintótica.
+- Iteración directa en float64; las órbitas que superan |estado|=10⁶ se declaran escapadas.
+
+### Preguntas para investigar
+
+- Compara a=1 y a=1.4.
+- ¿Cómo cambia el atractor al modificar b?
+
+### Ecuaciones
+
+Mapa en x:
+
+$$x_{n+1}=1-ax_n^2+y_n$$
+
+Mapa en y:
+
+$$y_{n+1}=bx_n$$
+
+Contracción de área para |b|<1:
+
+$$\det J=-b$$
+
+Sensibilidad; no es un exponente asintótico:
+
+$$d_n=\|\mathbf{u}_{n,\delta}-\mathbf{u}_n\|_2$$
+
+### Ejemplos
+
+- [Hénon: atractor clásico](../examples/henon_attractor.json): Tras descartar el transitorio aparece una estructura contraída en el plano.
+- [Hénon: otro régimen](../examples/henon_periodic.json): Compara los puntos finales con a=1.4 usando el mismo estado inicial.
+
+### Referencias
+
+- [Hénon (1976)](https://doi.org/10.1007/BF01608556)
+
+## 23. Kuramoto: sincronización colectiva
+
+**Área:** Caos y dinámica.
+
+Osciladores de fase acoplados: animación circular, parámetro de orden y barrido de sincronización.
+
+**Escena:** Cada marcador es una fase sobre el círculo unitario: (cos θ, sin θ, 0). No son partículas materiales.
+
+**Duración:** 15.0 adimensional por defecto; rango 0.5 a 120.
+
+| Campo | Unidad | Valor por defecto | Rango / opciones | Significado |
+| --- | --- | --- | --- | --- |
+| Número de osciladores | adimensional | 24 | 3 a 80 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Frecuencia natural media | adimensional | 1.0 | -3 a 3 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Desviación de frecuencia | adimensional | 0.4 | 0 a 2 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Acoplamiento K | adimensional | 2.0 | 0 a 6 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Perturbación inicial δ | adimensional | 1e-05 | 1e-08 a 0.01 | Desplazamiento de la primera variable; en SIR transfiere δ de S a I conservando la población. |
+| Inicio del tramo final / T | adimensional | 0.5 | 0 a 0.9 | Fracción de tiempo descartada en fase y barrido. SIR usa todo el intervalo para buscar el pico de I. |
+| Barrido: K mínimo | adimensional | 0.0 | 0 a 6 | Inicio del barrido independiente. |
+| Barrido: K máximo | adimensional | 4.0 | 0 a 6 | Final del barrido independiente. |
+| Valores en el barrido | adimensional | 12 | 4 a 50 | Cada valor empieza desde la misma condición inicial. |
+
+### Supuestos
+
+- Variables y tiempo adimensionales; modelo determinista reducido.
+- La distancia entre trayectorias no es un exponente de Lyapunov.
+- El barrido muestra extremos muestreados a tiempo finito; no prueba una bifurcación asintótica.
+- Acoplamiento global y frecuencias normales fijas determinadas por la semilla.
+- El orden mide coherencia instantánea; una población finita fluctúa incluso sin acoplamiento.
+
+### Preguntas para investigar
+
+- Compara K=0 y K=3 usando la misma semilla.
+- ¿Cómo cambia la sincronización al ampliar la dispersión de frecuencias?
+
+### Ecuaciones
+
+Modelo global de fases:
+
+$$\dot{\theta}_i=\omega_i+\frac{K}{N}\sum_j\sin(\theta_j-\theta_i)$$
+
+Parámetro de orden complejo:
+
+$$Z=\frac{1}{N}\sum_j e^{i\theta_j}=Re^{i\psi}$$
+
+R=1: coherencia total de fases:
+
+$$0\leq R\leq 1$$
+
+Forma de campo medio usada en el cálculo:
+
+$$\dot{\theta}_i=\omega_i+KR\sin(\psi-\theta_i)$$
+
+### Ejemplos
+
+- [Kuramoto: sincronización](../examples/kuramoto_sync.json): Con acoplamiento fuerte aumenta R y se agrupan las fases.
+- [Kuramoto: osciladores libres](../examples/kuramoto_free.json): Con K=0 cada fase avanza a su frecuencia natural; R fluctúa.
+
+### Referencias
+
+- [Kuramoto · Scholarpedia](http://www.scholarpedia.org/article/Kuramoto_model)
+- [SciPy · solve_ivp y DOP853](https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html)
+
 ## Condiciones adicionales y lectura de diagnósticos
 
+- **Gas 3D:** hasta 96 esferas, radio < L/6 y volumen ocupado ≤ 8 %. El paso limita cada desplazamiento a 0.3r. Los contactos se corrigen tras el avance, con dos pasadas por pares; compara observables al reducir Δt. Presión = impulso acumulado/(6L²t). La energía conservada no garantiza exactitud de tiempos de choque.
+- **N cuerpos:** hasta 128 partículas, potencial suavizado y fronteras abiertas. Se controla Δt·ω ≤ 0.5 con una escala conservadora de la fuerza. Conservación de energía, momento y momento angular; comparación de posiciones a Δt/2. No hay colisiones, fusiones ni radiación. Las unidades son reducidas y no hay conversión SI automática.
+- **Sistemas ampliados:** Rössler, Van der Pol, Lotka–Volterra, SIR, Hénon y Kuramoto incluyen condiciones vecinas y barrido de un parámetro. Cada valor se inicia de forma independiente; los extremos son muestreados en un horizonte finito. Los escapes/fallos se marcan NaN en el CSV. La distancia de estados no es un exponente de Lyapunov.
+- **SIR:** S₀+I₀ ≤ 1; la condición vecina transfiere δ de S a I. Se controla S+I+R=1. El barrido busca extremos de I en el intervalo completo.
+- **Hénon:** al menos 50 iteraciones tras descartar el transitorio. La órbita principal o vecina falla si supera |estado|=10⁶; el barrido registra los valores escapados sin unirlos.
+- **Kuramoto:** frecuencias normales fijas por semilla, acoplamiento global y fases sin envolver. R es coherencia, no probabilidad. La distancia vecina se calcula con diferencias angulares mínimas.
 - **Campo E/B:** límite de 2000 unidades del reloj interno para mantener una simulación interactiva. Reduce campos o tiempo si se supera. No se calculan radiación, colisiones ni pérdida por decaimiento de la partícula seguida.
 - **Rutherford:** K/(mc²) ≤ 0.05. La masa del blanco se considera infinita; A solo calcula un radio orientativo. Si el acercamiento llega al radio nuclear, el potencial puntual no basta para interpretar ese régimen.
 - **Dos cuerpos:** M ≥ m₁+m₂ y boost γ ≤ 10⁶. Se usan componentes de cono de luz para reducir cancelación numérica; reconstruir masas como E²−p² a boosts grandes puede perder precisión. El barrido angular no asigna una probabilidad de emisión.

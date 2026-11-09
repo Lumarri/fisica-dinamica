@@ -4,6 +4,7 @@ os.environ.setdefault('QT_QPA_PLATFORM', 'offscreen')
 import tempfile
 import time
 import unittest
+import numpy as np
 from pathlib import Path
 from unittest.mock import patch
 
@@ -54,7 +55,7 @@ class DesktopTests(unittest.TestCase):
                     for other in entries[i+1:]:self.assertFalse(entry.geometry().intersects(other.geometry()))
                 self.assertEqual(len(self.window.scene.plane_artists), 3)
                 self.assertEqual(self.window.dynamic_form.rowCount(),len(MODELS[model].parameters))
-                if model in {'pendulum','double_pendulum','projectile','orbit','em_particle','rutherford','two_body'}:
+                if model in {'pendulum','double_pendulum','projectile','orbit','em_particle','rutherford','two_body','gas_box','nbody'}:
                     ax=self.window.scene.ax
                     spans=[b-a for a,b in [ax.get_xlim(),ax.get_ylim(),ax.get_zlim()]]
                     self.assertAlmostEqual(spans[0],spans[1],places=7)
@@ -66,7 +67,7 @@ class DesktopTests(unittest.TestCase):
                 self.assertTrue(self.window.csv_button.isEnabled())
                 self.assertFalse(self.window.dirty)
                 self.window.timeline.setValue(100)
-                prefix='n = ' if model=='logistic' else 'x = ' if model=='quantum_barrier' else 't = '
+                prefix='n = ' if model in {'logistic','henon'} else 'x = ' if model=='quantum_barrier' else 't = '
                 self.assertIn(prefix, self.window.time_label.text())
 
     def test_background_simulation_from_run_button(self):
@@ -153,9 +154,9 @@ class DesktopTests(unittest.TestCase):
         self.assertEqual(restored.duration,c.duration)
         self.assertEqual(restored.parameters['half_life'],c.parameters['half_life'])
 
-    def test_six_sections_and_compact_window_navigation(self):
+    def test_eight_sections_and_compact_window_navigation(self):
         self.assertEqual(self.window.active_section,'inicio')
-        expected={'inicio':7,'laboratorio':0,'modelos':4,'particulas':5,'resultados':3,'cuaderno':6}
+        expected={'inicio':7,'laboratorio':0,'simulador':0,'dinamicos':0,'modelos':4,'particulas':5,'resultados':3,'cuaderno':6}
         self.assertEqual(len(self.window.nav_buttons),len(expected))
         self.window.resize(1000,720)
         for section,index in expected.items():
@@ -176,6 +177,23 @@ class DesktopTests(unittest.TestCase):
         self.window.open_example(self.window.library_example_selector.currentData());self.wait_worker()
         self.assertEqual(self.window.result.config.parameters['energy'],5.)
         self.assertEqual(self.window.result.config.parameters['barrier'],5.)
+
+    def test_particle_animation_and_playback_controls(self):
+        c=ExperimentConfig(model='gas_box',duration=1,parameters={'bodies':12},solver=SolverSettings(points=200))
+        self.window.apply_config(c);self.window.accept_result(run_experiment(c))
+        self.assertEqual(self.window.active_section,'simulador')
+        self.window.timeline.setValue(20);self.window.next_button.click()
+        self.assertEqual(self.window.timeline.value(),21)
+        self.window.previous_button.click();self.assertEqual(self.window.timeline.value(),20)
+        shown=np.column_stack(self.window.scene.particle_artist._offsets3d)
+        np.testing.assert_allclose(shown,self.window.result.extra['positions'][20])
+        self.window.restart_button.click();self.assertEqual(self.window.timeline.value(),0)
+        self.window.loop_check.setChecked(True);self.window.timeline.setValue(198)
+        self.window._advance_frame();self.assertEqual(self.window.timeline.value(),0)
+        self.window.navigate_section('dinamicos')
+        self.assertEqual(self.window.model_selector.currentData(),'rossler')
+        self.window.navigate_section('simulador')
+        self.assertEqual(self.window.collect_config().parameters['bodies'],12)
 
     def test_neumorphic_slider_accepts_mouse_and_keyboard(self):
         self.window.navigate_section('laboratorio');self.app.processEvents()

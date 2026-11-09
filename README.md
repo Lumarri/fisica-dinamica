@@ -1,8 +1,12 @@
 # DYNAMIS 2 · Laboratorio de física de escritorio
 
-Programa nativo para **Windows x64**, con **15 modelos**, **34 ejemplos guiados** y un catálogo de **28 especies de partículas**. Incluye mecánica, dinámica no lineal, probabilidades, electromagnetismo relativista y modelos introductorios de física de partículas y cuántica. La interfaz usa Qt y Matplotlib y trabaja localmente.
+Programa nativo para **Windows x64**, con **23 modelos**, **52 ejemplos guiados** y un catálogo de **28 especies de partículas**. Incluye mecánica, dinámica no lineal, probabilidades, electromagnetismo relativista y modelos introductorios de física de partículas y cuántica. La interfaz usa Qt y Matplotlib y trabaja localmente.
 
 ## Descargar y ejecutar en Windows
+
+**Descarga directa:** [última versión para Windows x64](https://github.com/Lumarri/fisica-dinamica/releases/latest). Descarga `Dynamis.exe` y ábrelo; no requiere instalar Python.
+
+También se conservan los paquetes de verificación de cada compilación:
 
 1. Abre [Build Windows desktop](https://github.com/Lumarri/fisica-dinamica/actions/workflows/windows.yml).
 2. Entra en la compilación más reciente que haya terminado correctamente.
@@ -28,7 +32,7 @@ Si ya tienes el repositorio, actualízalo con `git pull` e instala de nuevo `req
 
 Tema **neumórfico oscuro en azul marino**, con superficies de doble sombra, controles hundidos y estados activos en azul hielo. **Space Grotesk** se incluye para la interfaz; **Computer Modern**, la tipografía clásica de LaTeX, se usa en fórmulas, lecturas científicas, entradas numéricas y datos. No hace falta instalar fuentes ni una distribución de TeX para usar el programa.
 
-La navegación principal ofrece **Inicio, Laboratorio, Modelos y ejemplos, Partículas, Resultados y Cuaderno**. Inicio abre experimentos destacados; la biblioteca permite filtrar por área, consultar supuestos y cargar ejemplos. El área de trabajo es desplazable en ventanas pequeñas.
+La navegación principal ofrece **Inicio, Laboratorio, Partículas 3D, Dinámica, Modelos, Catálogo, Resultados y Cuaderno**. Inicio abre experimentos destacados; la biblioteca permite filtrar por área, consultar supuestos y cargar ejemplos. El área de trabajo es desplazable en ventanas pequeñas.
 
 La fuente Space Grotesk se distribuye bajo SIL Open Font License 1.1; se conserva su licencia en `assets/fonts/OFL.txt`.
 
@@ -37,11 +41,22 @@ La fuente Space Grotesk se distribuye bajo SIL Open Font License 1.1; se conserv
 | Área | Modelos | Campos y resultados destacados |
 | --- | --- | --- |
 | Mecánica | Oscilador amortiguado, péndulo no lineal, proyectil 3D, órbita gravitatoria y osciladores acoplados | Masas, longitudes, rigideces, fricción, gravedad, viento vectorial, arrastre, excentricidad e inclinación; energías, impacto y momento angular |
-| Caos y dinámica | Lorenz, péndulo doble, Duffing y mapa logístico | Condiciones iniciales, perturbaciones, forzamiento, transitorios y barridos; espacio de estados, sección estroboscópica, FFT, bifurcaciones y Lyapunov del mapa |
+| Caos y dinámica | Lorenz, péndulo doble, Duffing, mapa logístico, Rössler, Van der Pol, Lotka–Volterra, SIR, Hénon y Kuramoto | Condiciones iniciales, perturbaciones, forzamiento, transitorios y barridos; espacio de estados, sección estroboscópica, FFT, bifurcaciones y Lyapunov del mapa |
+| Simuladores de partículas | Gas de esferas elásticas y N cuerpos con gravedad o cargas | Cantidad, geometría, radio, masa, velocidad, fuerza, suavizado y paso; colisiones, presión, energía, momentos, trayectorias completas y convergencia |
 | Probabilidades | Conjunto de osciladores | Realizaciones, semilla, incertidumbre de rigidez y posición, percentiles, distribución conjunta e intervalo Wilson |
 | Partículas y cuántica | Partícula relativista en E/B, Rutherford, población radiactiva, decaimiento de dos cuerpos y barrera cuántica 1D | Especie, energía, campos vectoriales, impacto, carga del blanco, semivida, eficiencia, fondo, masas de productos, boost y barrera; trayectorias, secciones eficaces, cuentas, cuatro-momentos y transmisión/reflexión |
 
 Consulta la [guía detallada de modelos, parámetros y ejemplos](docs/MODELOS.md). La misma información se encuentra dentro del programa en **Modelos y ejemplos**.
+
+## Nuevos simuladores y sistemas dinámicos
+
+- **Partículas 3D → Gas de esferas elásticas:** hasta 96 esferas, recipiente cúbico, masas/radios iguales, semilla, rapidez RMS y paso configurables. Incluye presión por impulso en paredes, conteo de choques y balance de energía/momento con el recipiente. El tamaño de los puntos es ilustrativo; el radio físico se usa en los contactos.
+- **Partículas 3D → N cuerpos:** hasta 128 partículas con gravedad o cargas de signos alternos, nube o disco, rotación y dispersión inicial. Usa potencial suavizado y Velocity Verlet; compara con la mitad del paso. Trabaja en unidades reducidas declaradas: uL, uM, uT y uE = uM·uL²/uT².
+- **Dinámica:** incorpora Rössler, Van der Pol, Lotka–Volterra, SIR, Hénon y Kuramoto. Cada modelo nuevo compara condiciones vecinas y barre un parámetro con mínimo, máximo y número de valores elegibles. Van der Pol, Lotka–Volterra y SIR muestran campos de direcciones normalizados en el plano de estados.
+- **Reproducción:** pausa, volver al inicio, fotograma anterior/siguiente, velocidad y repetición. Se anima una simulación ya calculada. Kuramoto representa fases en el círculo unitario.
+- **Resultados:** elige **Trayectorias de partículas**, **Propiedades iniciales** o **Barrido de parámetros** cuando estén disponibles. CSV incluye todas las filas y la configuración reproducible del experimento.
+
+Los barridos nuevos comienzan cada valor desde el mismo estado y semilla; muestran extremos a tiempo finito, no bifurcaciones demostradas. Los escapes se registran con NaN y estado. Los modelos clásicos de muchas partículas complementan los módulos relativistas/cuánticos existentes.
 
 ## Primer experimento
 
@@ -53,11 +68,11 @@ Consulta la [guía detallada de modelos, parámetros y ejemplos](docs/MODELOS.md
 
 Ejemplos para comenzar: tiro parabólico en vacío, órbita circular, transferencia entre osciladores, Lorenz estable/caótico, hélice de electrón y positrón, alfa sobre oro, población de muones en reposo, `π⁺ → μ⁺ν`, `K⁺ → π⁺π⁰`, `Z⁰ → e⁺e⁻` y túnel bajo una barrera.
 
-Los [34 proyectos JSON de ejemplo](examples/) también se incluyen en el repositorio. El ejecutable lleva los ejemplos integrados y no necesita esos archivos externos.
+Los [52 proyectos JSON de ejemplo](examples/) también se incluyen en el repositorio. El ejecutable lleva los ejemplos integrados y no necesita esos archivos externos.
 
 ## Escenas, datos y proyectos
 
-- **3D:** giro con el ratón, acercamiento, planos XY/XZ/YZ y reproducción del cursor. Péndulos con varillas animadas y decaimiento de dos cuerpos con ambas trayectorias.
+- **3D:** giro con el ratón, acercamiento, planos XY/XZ/YZ, múltiples partículas animadas y controles de reproducción. Péndulos con varillas animadas y decaimiento de dos cuerpos con ambas trayectorias.
 - **Coordenadas explícitas:** una escena puede ser espacial, de estados o compleja. Los rótulos indican qué significa cada eje. La función de onda cuántica no se representa como trayectoria de una partícula.
 - **Fórmulas:** ecuaciones renderizadas en la ventana y diagnósticos del método utilizado.
 - **Datos:** tabla de hasta 1000 filas visibles, selección de conjuntos auxiliares y copia con Ctrl+C. Exportar CSV guarda **todas** las filas del conjunto seleccionado con 17 cifras significativas de float64.
@@ -71,6 +86,7 @@ Las simulaciones se ejecutan en segundo plano. Mientras se calcula, el programa 
 
 - Aritmética **float64**. Las cifras mostradas o exportadas no garantizan igual cantidad de decimales físicamente correctos.
 - Los modelos diferenciales usan **DOP853** y se comparan con una integración con `rtol/10`, `atol/10` y `paso/2`. Se normaliza cada componente por `max(1, max|referencia|)`. Es un diagnóstico empírico, no una cota garantizada del error global.
+- **Muchas partículas:** el gas usa impulsos elásticos con detección de contacto por subpasos y corrección de penetración; los tiempos de choque son aproximados. El modelo N cuerpos usa Verlet y potencial suavizado; ε cambia el potencial y no representa el error numérico. Ambos subdividen los intervalos de salida respetando Δt máximo.
 - Cada modelo declara sus unidades. La duración orbital se introduce en períodos; internamente se integra con `τ = t√(GM/a³)`. En campos E/B se normalizan tiempo, posición y momento para resolver las distintas escalas. El panel de precisión detalla el reloj interno del paso máximo.
 - Más puntos de salida aumentan la resolución de las figuras; no sustituyen tolerancias adecuadas. La FFT tiene resolución finita y la sección de Poincaré de Duffing usa interpolación lineal.
 - Las bandas de percentiles, los intervalos de confianza de una probabilidad y los cuantiles de población tienen significados diferentes; las leyendas y guías lo especifican.
@@ -97,9 +113,9 @@ El resultado es `dist\Dynamis.exe`. También puedes ejecutar `scripts/build_wind
 
 La interfaz utiliza PySide6/Qt 6.11.3, validado con Python 3.11. El iniciador de Windows actualiza esa dependencia si detecta otra versión.
 
-Se verifican soluciones e invariantes físicos: oscilación armónica, disipación, péndulos, tiro en vacío, período kepleriano, modos acoplados, campo eléctrico y magnético, energía de Rutherford, ley de semivida, cuatro-momento relativista y `R+T=1` en la barrera. También se prueban ejemplos, persistencia, compatibilidad de proyectos, tablas, exportaciones y los dibujos/fórmulas de los 15 modelos.
+Se verifican choques elásticos, impulso con paredes, fuerzas como gradiente del potencial, convergencia de Verlet, conservación de momentos, Van der Pol armónico, equilibrio/integral de Lotka–Volterra, población SIR, mapa de Hénon y fases libres de Kuramoto. También se verifican soluciones e invariantes físicos: oscilación armónica, disipación, péndulos, tiro en vacío, período kepleriano, modos acoplados, campo eléctrico y magnético, energía de Rutherford, ley de semivida, cuatro-momento relativista y `R+T=1` en la barrera. También se prueban ejemplos, persistencia, compatibilidad de proyectos, tablas, exportaciones y los dibujos/fórmulas de los 23 modelos.
 
-El flujo de Windows construye el `.exe` y ejecuta la aplicación empaquetada con los 15 modelos, comprobando Qt, cálculos, figuras y capturas en modo `offscreen`. Guarda `verification.json`, capturas y versiones de dependencias en el artefacto.
+El flujo de Windows construye el `.exe` y ejecuta la aplicación empaquetada con los 23 modelos, comprobando Qt, cálculos, figuras y capturas en modo `offscreen`. Guarda `verification.json`, capturas y versiones de dependencias en el artefacto.
 
 ## Estructura
 
@@ -111,6 +127,8 @@ El flujo de Windows construye el `.exe` y ejecuta la aplicación empaquetada con
 | `catalog.py` | Definiciones de campos, unidades, supuestos, fórmulas y ejemplos |
 | `models.py` | Integrador y modelos originales |
 | `advanced_models.py` | Mecánica adicional, caos, partículas y barrera cuántica |
+| `particle_simulator.py` | Gas elástico y N cuerpos con fuerzas mutuas |
+| `dynamic_systems.py` | Sistemas ampliados, condiciones vecinas, campos y barridos |
 | `particle_data.py` | Propiedades de referencia y conversiones de unidades |
 | `experiments.py` | Configuración validada, persistencia y resultados |
 | `plotting.py` | Escenas 3D, análisis y fórmulas |

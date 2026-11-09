@@ -67,6 +67,10 @@ def energy_drift(energy):
 
 
 def validate_model(model, p, config):
+    from particle_simulator import PARTICLE_MODELS, validate_particles
+    from dynamic_systems import DYNAMIC_MODELS, validate_dynamics
+    if model in PARTICLE_MODELS: validate_particles(model,p,config)
+    if model in DYNAMIC_MODELS: validate_dynamics(model,p,config)
     if model == 'logistic' and (p['transient'] >= p['iterations']-50 or p['rmin'] >= p['rmax']):
         raise ValueError('Deja al menos 50 iteraciones tras el transitorio y usa r mínimo < r máximo.')
     if model == 'two_body' and p['parent_mass'] < p['daughter1']+p['daughter2']:
@@ -495,4 +499,8 @@ def run_advanced(config):
     parameters=MODELS[config.model].values(config.parameters)
     validate_model(config.model,parameters,config)
     config.parameters=parameters
+    from particle_simulator import PARTICLE_MODELS, run_particles
+    from dynamic_systems import DYNAMIC_MODELS, run_dynamics
+    if config.model in PARTICLE_MODELS:return run_particles(config,parameters)
+    if config.model in DYNAMIC_MODELS:return run_dynamics(config,parameters)
     return RUNNERS[config.model](config,parameters)

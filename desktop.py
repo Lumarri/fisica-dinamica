@@ -94,6 +94,8 @@ class MainWindow(QMainWindow):
         self.fields = {}
         self.dynamic_fields = {}
         self._last_model = None
+        self.lab_section = "laboratorio"
+        self.workspace_configs = {}
         self.timer = QTimer(self)
         self.timer.setInterval(65)
         self.timer.timeout.connect(self._advance_frame)
@@ -109,7 +111,7 @@ class MainWindow(QMainWindow):
         self.workspace_scroll.setWidget(self._build_workspace());content.addWidget(self.workspace_scroll)
         content.setSizes([295, 1120]); content.setChildrenCollapsible(False)
         layout.addWidget(content, 1)
-        self.statusBar().showMessage('Espacio de trabajo local · 15 modelos · proyectos y datos en tu equipo')
+        self.statusBar().showMessage(f'Espacio de trabajo local · {len(MODELS)} modelos · proyectos y datos en tu equipo')
         self.loading = False
         self._model_changed()
         self.navigate_section('inicio')
@@ -130,28 +132,48 @@ class MainWindow(QMainWindow):
     def _build_navigation(self):
         frame=NeoSurface();layout=QHBoxLayout(frame);layout.setContentsMargins(12,9,12,9);layout.setSpacing(7)
         self.nav_buttons={};self.nav_group=QButtonGroup(self)
-        for key,title in [('inicio','Inicio'),('laboratorio','Laboratorio'),('modelos','Modelos y ejemplos'),('particulas','Partículas'),('resultados','Resultados'),('cuaderno','Cuaderno')]:
-            button=QPushButton(title);button.setCheckable(True)
+        for key,title in [('inicio','Inicio'),('laboratorio','Laboratorio'),('simulador','Partículas 3D'),('dinamicos','Dinámica'),('modelos','Modelos'),('particulas','Catálogo'),('resultados','Resultados'),('cuaderno','Cuaderno')]:
+            button=QPushButton(title);button.setCheckable(True);button.setStyleSheet('padding:7px 8px;')
             button.clicked.connect(lambda checked=False,name=key:self.navigate_section(name))
             self.nav_group.addButton(button);self.nav_buttons[key]=button;layout.addWidget(button,1)
         return frame
 
+    @staticmethod
+    def workspace_for_model(model):
+        if MODELS[model].family=='Simuladores de partículas':return 'simulador'
+        if MODELS[model].family=='Caos y dinámica':return 'dinamicos'
+        return 'laboratorio'
+
     def navigate_section(self,key):
-        indices={'inicio':7,'laboratorio':0,'modelos':4,'particulas':5,'resultados':3,'cuaderno':6}
+        indices={'inicio':7,'laboratorio':0,'simulador':0,'dinamicos':0,'modelos':4,'particulas':5,'resultados':3,'cuaderno':6}
         if key not in indices:return
-        index=self.tabs.currentIndex() if key=='laboratorio' and self.tabs.currentIndex() in {0,1,2} else indices[key]
+        if key in {'laboratorio','simulador','dinamicos'}:
+            current=self.workspace_for_model(self.model_selector.currentData())
+            if current!=key:
+                if self.worker is not None:
+                    self.statusBar().showMessage('Espera a que termine el cálculo para cambiar de simulador.',6000);return
+                try:self.workspace_configs[current]=self.collect_config()
+                except ValueError:pass
+                default={'laboratorio':'oscillator','simulador':'gas_box','dinamicos':'rossler'}[key]
+                self.apply_config(self.workspace_configs.get(key,ExperimentConfig(model=default,duration=MODELS[default].duration)))
+            self.lab_section=key
+        index=self.tabs.currentIndex() if key in {'laboratorio','simulador','dinamicos'} and self.tabs.currentIndex() in {0,1,2} else indices[key]
         self.tabs.setCurrentIndex(index);self._section_from_tab(index)
 
     def _section_from_tab(self,index):
-        key={3:'resultados',4:'modelos',5:'particulas',6:'cuaderno',7:'inicio'}.get(index,'laboratorio')
+        key={3:'resultados',4:'modelos',5:'particulas',6:'cuaderno',7:'inicio'}.get(index,self.lab_section)
         self.active_section=key
         for name,button in self.nav_buttons.items():button.setChecked(name==key)
-        lab=key=='laboratorio';context=key in {'laboratorio','resultados'}
+        lab=key in {'laboratorio','simulador','dinamicos'};context=lab or key=='resultados'
         self.sidebar.setVisible(lab);self.tabs.tabBar().setVisible(lab)
         for widget in [self.workspace_eyebrow,self.experiment_label,*self.metrics]:widget.setVisible(context)
         self.workspace_title.setVisible(False)
         self.state_label.setVisible(context);self.csv_button.setVisible(context)
-        if lab:self.content_splitter.setSizes([320,1100])
+        if lab:
+            self.content_splitter.setSizes([320,1100])
+            self.workspace_eyebrow.setText({'laboratorio':'LABORATORIO / OBSERVAR · MEDIR · CONTRASTAR',
+                'simulador':'PARTÍCULAS 3D / INTERACCIONES · COLISIONES · CONSERVACIÓN',
+                'dinamicos':'SISTEMAS DINÁMICOS / FASES · SENSIBILIDAD · BARRIDOS'}[key])
 
     def open_example(self,key):
         if self.worker is not None:
@@ -330,9 +352,24 @@ class MainWindow(QMainWindow):
         timeline = QHBoxLayout()
         self.play_button = QPushButton('Reproducir'); self.play_button.setEnabled(False); self.play_button.clicked.connect(self._toggle_play)
         timeline.addWidget(self.play_button)
+        self.restart_button=QPushButton('Inicio');self.restart_button.setToolTip('Volver al primer fotograma')
+        self.previous_button=QPushButton('−1');self.previous_button.setToolTip('Fotograma anterior')
+        self.next_button=QPushButton('+1');self.next_button.setToolTip('Fotograma siguiente')
+        for button in [self.restart_button,self.previous_button,self.next_button]:
+            button.setStyleSheet('padding:5px 8px;');button.setFixedWidth(70 if button is self.restart_button else 52);timeline.addWidget(button)
+        self.restart_button.clicked.connect(lambda:self._step_frame(0,absolute=True))
+        self.previous_button.clicked.connect(lambda:self._step_frame(-1))
+        self.next_button.clicked.connect(lambda:self._step_frame(1))
         self.timeline = QSlider(Qt.Orientation.Horizontal); self.timeline.setRange(0, 0); self.timeline.valueChanged.connect(self._seek); timeline.addWidget(self.timeline, 1)
         self.time_label = QLabel('t = 0'); self.time_label.setObjectName('numeric'); self.time_label.setMinimumWidth(120); timeline.addWidget(self.time_label)
         scene_layout.addLayout(timeline)
+        playback=QHBoxLayout();playback.addWidget(QLabel('Velocidad de reproducción'))
+        self.speed_selector=QComboBox()
+        for label,value in [('0.25×',.25),('0.5×',.5),('1×',1.),('2×',2.),('4×',4.)]:self.speed_selector.addItem(label,value)
+        self.speed_selector.setCurrentIndex(2);playback.addWidget(self.speed_selector)
+        self.loop_check=QCheckBox('Repetir');playback.addWidget(self.loop_check);playback.addStretch()
+        caption=QLabel('Reproducción de la simulación calculada');caption.setObjectName('muted');playback.addWidget(caption)
+        scene_layout.addLayout(playback)
         self.tabs.addTab(scene_page, 'Escena 3D')
         analysis_page = QWidget(); analysis_layout = QVBoxLayout(analysis_page)
         self.analysis = AnalysisCanvas(); analysis_layout.addWidget(self.analysis, 1)
@@ -394,9 +431,9 @@ class MainWindow(QMainWindow):
         self.time_form.labelForField(self.fields['duration']).setText('Duración ('+spec.time_unit+')')
         self.time_help.setText('Tiempo de evolución en '+spec.time_unit+'.' if spec.timed else '')
         self.model_summary.setText(spec.summary)
-        self.seed_group.setVisible(model in {'ensemble','radioactive'})
+        self.seed_group.setVisible(model in {'ensemble','radioactive','gas_box','nbody','kuramoto'})
         self.dynamic_group.setVisible(not legacy)
-        self.solver_group.setVisible(model != 'logistic')
+        self.solver_group.setVisible(model not in {'logistic','henon'})
         for key in ['rtol','atol','max_step']:
             self.solver_form.setRowVisible(self.fields[key], spec.numeric)
         self.solver_form.labelForField(self.fields['points']).setText('Puntos espaciales' if model == 'quantum_barrier' else 'Puntos de salida')
@@ -443,6 +480,8 @@ class MainWindow(QMainWindow):
         model=self.model_selector.currentData();changed=model!=self._last_model
         self._configure_model(model,rebuild=changed)
         if changed:self.fields['duration'].setValue(MODELS[model].duration)
+        self.lab_section=self.workspace_for_model(model)
+        if self.tabs.currentIndex() in {0,1,2}:self._section_from_tab(self.tabs.currentIndex())
         self._last_model=model;self._refresh_examples()
         self._mark_dirty()
 
@@ -594,10 +633,17 @@ class MainWindow(QMainWindow):
             self.timer.start(); self.play_button.setText('Pausar')
 
     def _advance_frame(self):
-        index = min(self.timeline.maximum(), self.timeline.value()+max(1, self.timeline.maximum()//160))
+        if self.result is None or self.dirty or self.worker is not None:return
+        index = min(self.timeline.maximum(), self.timeline.value()+max(1, round(self.timeline.maximum()/160*self.speed_selector.currentData())))
         self.timeline.setValue(index)
         if index == self.timeline.maximum():
-            self.timer.stop(); self.play_button.setText('Reproducir')
+            if self.loop_check.isChecked():self.timeline.setValue(0)
+            else:self.timer.stop(); self.play_button.setText('Reproducir')
+
+    def _step_frame(self, delta, *, absolute=False):
+        if self.result is None or self.dirty or self.worker is not None:return
+        self.timer.stop();self.play_button.setText('Reproducir')
+        self.timeline.setValue(delta if absolute else self.timeline.value()+delta)
 
     def _seek(self, index):
         if self.result is not None:
@@ -605,9 +651,10 @@ class MainWindow(QMainWindow):
             model=self.result.config.model
             value=self.result.t[index]
             if model=='quantum_barrier':text=f'x = {value:.5g} nm'
-            elif model=='logistic':text=f'n = {index}'
+            elif model in {'logistic','henon'}:text=f'n = {index}'
             elif model in {'em_particle','two_body'}:text=f't = {value*1e9:.5g} ns'
-            elif model in {'lorenz','duffing'}:text=f't = {value:.5g}'
+            elif MODELS[model].time_unit=='adimensional':text=f't = {value:.5g}'
+            elif model=='nbody':text=f't = {value:.5g} uT'
             else:text=f't = {value:.5g} s'
             self.time_label.setText(text)
 
@@ -654,7 +701,7 @@ class MainWindow(QMainWindow):
         self.notes.setPlainText(config.notes)
         self._last_model=config.model
         self.loading = False
-        self._refresh_examples();self._mark_dirty();self.navigate_section('laboratorio')
+        self._refresh_examples();self._mark_dirty();self.lab_section=self.workspace_for_model(config.model);self.navigate_section(self.lab_section)
 
     def export_csv(self):
         if self.result is None or self.dirty or self.worker is not None:

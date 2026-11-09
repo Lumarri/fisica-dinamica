@@ -1,0 +1,40 @@
+{
+  "format_version": 2,
+  "model": "gas_box",
+  "duration": 8.0,
+  "mass": 1.0,
+  "stiffness": 4.0,
+  "damping": 0.2,
+  "x0": 1.0,
+  "v0": 0.0,
+  "sigma": 10.0,
+  "rho": 28.0,
+  "beta": 2.6666666666666665,
+  "y0": 1.0,
+  "z0": 1.0,
+  "delta": 0.0001,
+  "count": 1000,
+  "seed": 42,
+  "stiffness_std": 0.4,
+  "position_std": 0.05,
+  "threshold": 0.5,
+  "project_name": "Dos esferas y el recipiente",
+  "researcher": "",
+  "objective": "Sigue cada centro y observa intercambios de momento entre esferas y paredes.",
+  "references": "OpenStax · Mecánica: https://openstax.org/details/books/university-physics-volume-1",
+  "parameters": {
+    "bodies": 2,
+    "box": 2.0,
+    "radius": 0.1,
+    "body_mass": 0.01,
+    "rms_speed": 1.0,
+    "step": 0.005
+  },
+  "notes": "Resultado esperado:\nSigue cada centro y observa intercambios de momento entre esferas y paredes.",
+  "solver": {
+    "rtol": 1e-09,
+    "atol": 1e-11,
+    "max_step": 0.05,
+    "points": 1200
+  }
+}

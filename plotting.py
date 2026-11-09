@@ -55,6 +55,8 @@ class SceneCanvas(PlotCanvas):
         self.planes_visible = True
         self.link_artist = None
         self.extra_markers = []
+        self.particle_artist = None
+        self.particle_trails = []
 
     def draw_result(self, result):
         self.figure.clear()
@@ -64,6 +66,10 @@ class SceneCanvas(PlotCanvas):
         self.plane_artists = []
         self.link_artist = None
         self.extra_markers = []
+        self.particle_artist = None
+        self.particle_trails = []
+        if 'visual' in result.extra and 'particles' in result.extra['visual']:
+            self._draw_particles(result.extra['visual']);return
         if 'visual' in result.extra:
             self._draw_visual(result.extra['visual'], result.t)
             return
@@ -109,6 +115,39 @@ class SceneCanvas(PlotCanvas):
         self.marker, = ax.plot([coords[0, 0]], [coords[0, 1]], [coords[0, 2]],
                               marker="o", markersize=6, color=GOLD, markeredgecolor=FG)
         self.view("Perspectiva")
+
+    def _draw_particles(self, visual):
+        ax=self.ax;self.particle_positions=visual['particles']
+        self.coordinates=self.particle_positions[:,0]
+        self.marker=None
+        self.figure.text(.03,.96,visual['title'],fontsize=10,color=FG)
+        colors=visual.get('particle_colors',np.arange(self.particle_positions.shape[1]))
+        self.particle_artist=ax.scatter(*self.particle_positions[0].T,c=colors,cmap=LinearSegmentedColormap.from_list('charges',[CYAN,GOLD]) if visual.get('charge_colors') else NEO_CMAP,
+                                       s=34,alpha=.95,edgecolors=FG,linewidths=.3)
+        count=min(visual.get('trail_count',5),self.particle_positions.shape[1])
+        for i in range(count):
+            artist,=ax.plot([],[],[],lw=.8,alpha=.55,color=[CYAN,BLUE,GOLD][i%3])
+            self.particle_trails.append((artist,i))
+        if 'box' in visual:
+            half=visual['box']/2
+            from itertools import product
+            corners=np.array(list(product([-half,half],repeat=3)))
+            for i,a in enumerate(corners):
+                for b in corners[i+1:]:
+                    if np.count_nonzero(a!=b)==1:ax.plot(*np.vstack([a,b]).T,color=MUTED,lw=.8,alpha=.5)
+            ranges=[(-half*1.08,half*1.08)]*3
+        else:
+            low=self.particle_positions.min(axis=(0,1));high=self.particle_positions.max(axis=(0,1))
+            width=max(float(np.max(high-low))*1.15,.2)
+            center=(high+low)/2
+            ranges=[(v-width/2,v+width/2) for v in center]
+        ax.set_xlim(*ranges[0]);ax.set_ylim(*ranges[1]);ax.set_zlim(*ranges[2])
+        ax.set_xlabel(visual['labels'][0],labelpad=5);ax.set_ylabel(visual['labels'][1],labelpad=5)
+        ax.set_zlabel(visual['labels'][2],labelpad=2,fontsize=9);ax.set_box_aspect((1,1,1),zoom=1.03)
+        ax.xaxis.set_rotate_label(False);ax.yaxis.set_rotate_label(False)
+        ax.set_xlabel(visual['labels'][0],labelpad=0,fontsize=9);ax.set_ylabel(visual['labels'][1],labelpad=0,fontsize=9)
+        ax.tick_params(pad=0,labelsize=8)
+        self._draw_planes(ranges);self.view('Perspectiva')
 
     def _draw_visual(self, visual, parameter):
         ax = self.ax
@@ -178,6 +217,11 @@ class SceneCanvas(PlotCanvas):
         self.draw_idle()
 
     def set_frame(self, index):
+        if self.particle_artist is not None:
+            self.particle_artist._offsets3d=tuple(self.particle_positions[index].T)
+            for artist,i in self.particle_trails:
+                artist.set_data_3d(*self.particle_positions[max(0,index-75):index+1,i].T)
+            self.draw_idle();return
         if self.marker is None:
             return
         point = self.coordinates[index]
@@ -242,6 +286,8 @@ class AnalysisCanvas(PlotCanvas):
     def _draw_charts(self, axes, charts):
         colors=[CYAN,BLUE,GOLD,'#c8a0e1']
         for ax, spec in zip(axes,charts):
+            if 'vector_field' in spec:
+                f=spec['vector_field'];ax.quiver(f['x'],f['y'],f['u'],f['v'],color=MUTED,alpha=.28,scale=28,pivot='mid')
             if 'band' in spec:
                 x,low,high=spec['band'];ax.fill_between(x,low,high,color=BLUE,alpha=.22)
             for i, series in enumerate(spec['series']):

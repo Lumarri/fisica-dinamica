@@ -27,13 +27,17 @@ class Dashboard(QWidget):
             text=QLabel(label);text.setObjectName('muted');frame_box.addWidget(text);stats.addWidget(frame)
         box.addLayout(stats)
         heading=QLabel('Áreas de estudio');heading.setObjectName('cardTitle');box.addWidget(heading)
-        families=QHBoxLayout();families.setSpacing(10)
-        for family in dict.fromkeys(x.family for x in MODELS.values()):
-            button=NeoButton(family);button.clicked.connect(lambda checked=False,key=family:self.familyRequested.emit(key));families.addWidget(button)
+        families=QGridLayout();families.setSpacing(10)
+        for i,family in enumerate(dict.fromkeys(x.family for x in MODELS.values())):
+            button=NeoButton(family);button.clicked.connect(lambda checked=False,key=family:self.familyRequested.emit(key));families.addWidget(button,i//3,i%3)
         box.addLayout(families)
         heading=QLabel('Experimentos destacados');heading.setObjectName('cardTitle');box.addWidget(heading)
         grid=QGridLayout();grid.setSpacing(13)
-        highlights=[('orbit_circle','Órbita circular','Geometría orbital, energía y momento angular.'),
+        highlights=[('gas_dilute','Un gas en movimiento','Esferas, choques elásticos, energía y presión en 3D.'),
+                    ('gravity_disk','Partículas que interactúan','Fuerzas mutuas, conservación y comparación de pasos.'),
+                    ('rossler_classic','Explorar sistemas dinámicos','Atractores, condiciones vecinas y barridos de parámetros.'),
+                    ('kuramoto_sync','Sincronización colectiva','Fases acopladas y parámetro de orden de Kuramoto.'),
+                    ('orbit_circle','Órbita circular','Geometría orbital, energía y momento angular.'),
                     ('electron_helix','Hélice de un electrón','Movimiento relativista en un campo magnético.'),
                     ('pion_boost','Un pión y dos productos','Cinemática de decaimiento y conservación del cuatro-momento.'),
                     ('quantum_tunnel','Al otro lado de la barrera','Función de onda, reflexión y transmisión cuántica.')]
@@ -46,6 +50,6 @@ class Dashboard(QWidget):
             button=NeoButton('Explorar ejemplo');button.clicked.connect(lambda checked=False,name=key:self.exampleRequested.emit(name));card.addWidget(button)
             grid.addWidget(frame,i//2,i%2)
         box.addLayout(grid)
-        hint=QLabel('Laboratorio: simulación y análisis · Modelos y ejemplos: ecuaciones y supuestos · Partículas: propiedades · Resultados: datos · Cuaderno: tu investigación')
+        hint=QLabel('Partículas 3D: gas y fuerzas mutuas · Dinámica: sistemas y barridos · Modelos: ecuaciones y ejemplos · Catálogo: propiedades · Resultados: datos · Cuaderno: tu investigación')
         hint.setObjectName('muted');hint.setWordWrap(True);box.addWidget(hint)
         box.addStretch();scroll.setWidget(body);outer.addWidget(scroll)

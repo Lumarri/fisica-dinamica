@@ -1,0 +1,43 @@
+{
+  "format_version": 2,
+  "model": "kuramoto",
+  "duration": 15.0,
+  "mass": 1.0,
+  "stiffness": 4.0,
+  "damping": 0.2,
+  "x0": 1.0,
+  "v0": 0.0,
+  "sigma": 10.0,
+  "rho": 28.0,
+  "beta": 2.6666666666666665,
+  "y0": 1.0,
+  "z0": 1.0,
+  "delta": 0.0001,
+  "count": 1000,
+  "seed": 42,
+  "stiffness_std": 0.4,
+  "position_std": 0.05,
+  "threshold": 0.5,
+  "project_name": "Kuramoto: osciladores libres",
+  "researcher": "",
+  "objective": "Con K=0 cada fase avanza a su frecuencia natural; R fluctúa.",
+  "references": "Kuramoto · Scholarpedia: http://www.scholarpedia.org/article/Kuramoto_model; SciPy · solve_ivp y DOP853: https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html",
+  "parameters": {
+    "oscillators": 24,
+    "omega_mean": 1.0,
+    "omega_std": 0.4,
+    "coupling": 0.0,
+    "perturbation": 1e-05,
+    "tail_fraction": 0.5,
+    "sweep_low": 0.0,
+    "sweep_high": 4.0,
+    "sweep_points": 12
+  },
+  "notes": "Resultado esperado:\nCon K=0 cada fase avanza a su frecuencia natural; R fluctúa.",
+  "solver": {
+    "rtol": 1e-09,
+    "atol": 1e-11,
+    "max_step": 0.05,
+    "points": 1200
+  }
+}
