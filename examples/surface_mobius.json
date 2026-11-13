@@ -1,0 +1,39 @@
+{
+  "format_version": 2,
+  "model": "surface",
+  "duration": 25.0,
+  "mass": 1.0,
+  "stiffness": 4.0,
+  "damping": 0.2,
+  "x0": 1.0,
+  "v0": 0.0,
+  "sigma": 10.0,
+  "rho": 28.0,
+  "beta": 2.6666666666666665,
+  "y0": 1.0,
+  "z0": 1.0,
+  "delta": 0.0001,
+  "count": 1000,
+  "seed": 42,
+  "stiffness_std": 0.4,
+  "position_std": 0.05,
+  "threshold": 0.5,
+  "project_name": "Möbius: media vuelta",
+  "researcher": "",
+  "objective": "La banda se cierra invirtiendo el parámetro transversal.",
+  "references": "MathWorld · geometría diferencial: https://mathworld.wolfram.com/DifferentialGeometry.html",
+  "parameters": {
+    "shape": "mobius",
+    "radius": 1.5,
+    "minor": 0.45,
+    "curvature": 0.5,
+    "resolution": 49
+  },
+  "notes": "Resultado esperado:\nLa banda se cierra invirtiendo el parámetro transversal.",
+  "solver": {
+    "rtol": 1e-09,
+    "atol": 1e-11,
+    "max_step": 0.05,
+    "points": 1200
+  }
+}

@@ -154,7 +154,8 @@ class NeoButton(QPushButton):
         color=ACCENT if active or self.isChecked() else TEXT
         p.setPen(QColor(color if self.isEnabled() else '#657b98'))
         font=self.font();font.setBold(active);p.setFont(font)
-        p.drawText(rect.adjusted(9,0,-9,0),Qt.AlignmentFlag.AlignCenter,self.text())
+        padding=5 if self.property('compact') else 9
+        p.drawText(rect.adjusted(padding,0,-padding,0),Qt.AlignmentFlag.AlignCenter,self.text())
         if self.hasFocus():
             p.setBrush(Qt.BrushStyle.NoBrush);p.setPen(QPen(QColor('#759dcd'),1))
             p.drawRoundedRect(rect.adjusted(2,2,-2,-2),9,9)

@@ -1,6 +1,6 @@
 # DYNAMIS 2 · Laboratorio de física de escritorio
 
-Programa nativo para **Windows x64**, con **23 modelos**, **52 ejemplos guiados** y un catálogo de **28 especies de partículas**. Incluye mecánica, dinámica no lineal, probabilidades, electromagnetismo relativista y modelos introductorios de física de partículas y cuántica. La interfaz usa Qt y Matplotlib y trabaja localmente.
+Programa nativo para **Windows x64**, con **30 modelos**, **68 ejemplos guiados** y un catálogo de **28 especies de partículas**. Incluye mecánica, dinámica no lineal, probabilidades, electromagnetismo relativista y modelos introductorios de física de partículas y cuántica. La interfaz usa Qt y Matplotlib y trabaja localmente.
 
 ## Descargar y ejecutar en Windows
 
@@ -32,7 +32,7 @@ Si ya tienes el repositorio, actualízalo con `git pull` e instala de nuevo `req
 
 Tema **neumórfico oscuro en azul marino**, con superficies de doble sombra, controles hundidos y estados activos en azul hielo. **Space Grotesk** se incluye para la interfaz; **Computer Modern**, la tipografía clásica de LaTeX, se usa en fórmulas, lecturas científicas, entradas numéricas y datos. No hace falta instalar fuentes ni una distribución de TeX para usar el programa.
 
-La navegación principal ofrece **Inicio, Laboratorio, Partículas 3D, Dinámica, Modelos, Catálogo, Resultados y Cuaderno**. Inicio abre experimentos destacados; la biblioteca permite filtrar por área, consultar supuestos y cargar ejemplos. El área de trabajo es desplazable en ventanas pequeñas.
+La navegación principal ofrece **Inicio, Laboratorio, Partículas 3D, Dinámica, Geo / Grafos, Modelos, Catálogo, Resultados y Cuaderno**. Inicio abre experimentos destacados; la biblioteca permite filtrar por área, consultar supuestos y cargar ejemplos. El área de trabajo es desplazable en ventanas pequeñas.
 
 La fuente Space Grotesk se distribuye bajo SIL Open Font License 1.1; se conserva su licencia en `assets/fonts/OFL.txt`.
 
@@ -58,6 +58,24 @@ Consulta la [guía detallada de modelos, parámetros y ejemplos](docs/MODELOS.md
 
 Los barridos nuevos comienzan cada valor desde el mismo estado y semilla; muestran extremos a tiempo finito, no bifurcaciones demostradas. Los escapes se registran con NaN y estado. Los modelos clásicos de muchas partículas complementan los módulos relativistas/cuánticos existentes.
 
+## Geometría, grafos y nuevos escenarios 3D · versión 2.2
+
+La sección **Geo / Grafos** abre la geometría y las redes. La biblioteca permite filtrar **Geometría 3D** y **Grafos y redes**. Los nuevos escenarios de partículas aparecen en **Partículas 3D**.
+
+| Escenario | Qué permite investigar |
+| --- | --- |
+| Compton 3D | Energía y ángulos del fotón, retroceso del electrón, cuatro-momento y sección diferencial Klein–Nishina |
+| Trampa de Paul | Confinamiento RF, micromovimiento y trabajo de una fuente cuadrupolar en unidades reducidas |
+| Superficies paramétricas | Esfera, toro, Möbius y paraboloide; malla triangulada, área y refinamiento |
+| Geodésicas esféricas | Latitud, longitud, rumbo, arco recorrido y cuerda |
+| Grafos y rutas | Mundo pequeño, Erdős–Rényi, retícula y grafo geométrico; grados, componentes, agrupamiento y Dijkstra |
+| Difusión en grafos | Laplaciano, conservación de cantidad y equilibrio por componente, con color animado |
+| Red de osciladores | Modos normales, desplazamientos, energía y amortiguamiento sobre una red |
+
+Los controles **Malla / red** y **Nodos** muestran u ocultan la geometría y las etiquetas. La escala de color permanece fija durante la reproducción. Los CSV adicionales incluyen aristas/pesos, matrices, rutas, límites de equilibrio y modos normales según el escenario. Origen se cuenta desde 1; destino 0 selecciona el último nodo.
+
+Compton parte de un electrón libre en reposo; su curva angular es sección eficaz, no probabilidad normalizada. La trampa de Paul usa Mathieu ideal, sin electrodos ni carga espacial. Las superficies son geometría estática y el cursor no representa tiempo físico. La difusión usa cantidades abstractas con capacidad unitaria. La red vibratoria es un modelo escalar sobre un grafo; las aristas no son resortes centrales con longitud natural geométrica.
+
 ## Primer experimento
 
 1. Abre **Laboratorio** o elige un experimento destacado en **Inicio**. Selecciona el área y el modelo que quieres estudiar.
@@ -68,7 +86,7 @@ Los barridos nuevos comienzan cada valor desde el mismo estado y semilla; muestr
 
 Ejemplos para comenzar: tiro parabólico en vacío, órbita circular, transferencia entre osciladores, Lorenz estable/caótico, hélice de electrón y positrón, alfa sobre oro, población de muones en reposo, `π⁺ → μ⁺ν`, `K⁺ → π⁺π⁰`, `Z⁰ → e⁺e⁻` y túnel bajo una barrera.
 
-Los [52 proyectos JSON de ejemplo](examples/) también se incluyen en el repositorio. El ejecutable lleva los ejemplos integrados y no necesita esos archivos externos.
+Los [68 proyectos JSON de ejemplo](examples/) también se incluyen en el repositorio. El ejecutable lleva los ejemplos integrados y no necesita esos archivos externos.
 
 ## Escenas, datos y proyectos
 
@@ -113,9 +131,9 @@ El resultado es `dist\Dynamis.exe`. También puedes ejecutar `scripts/build_wind
 
 La interfaz utiliza PySide6/Qt 6.11.3, validado con Python 3.11. El iniciador de Windows actualiza esa dependencia si detecta otra versión.
 
-Se verifican choques elásticos, impulso con paredes, fuerzas como gradiente del potencial, convergencia de Verlet, conservación de momentos, Van der Pol armónico, equilibrio/integral de Lotka–Volterra, población SIR, mapa de Hénon y fases libres de Kuramoto. También se verifican soluciones e invariantes físicos: oscilación armónica, disipación, péndulos, tiro en vacío, período kepleriano, modos acoplados, campo eléctrico y magnético, energía de Rutherford, ley de semivida, cuatro-momento relativista y `R+T=1` en la barrera. También se prueban ejemplos, persistencia, compatibilidad de proyectos, tablas, exportaciones y los dibujos/fórmulas de los 23 modelos.
+Se verifican choques elásticos, impulso con paredes, fuerzas como gradiente del potencial, convergencia de Verlet, conservación de momentos, Van der Pol armónico, equilibrio/integral de Lotka–Volterra, población SIR, mapa de Hénon y fases libres de Kuramoto. También se verifican soluciones e invariantes físicos: oscilación armónica, disipación, péndulos, tiro en vacío, período kepleriano, modos acoplados, campo eléctrico y magnético, energía de Rutherford, ley de semivida, cuatro-momento relativista y `R+T=1` en la barrera. Se contrastan además conservación relativista en Compton, movimiento libre en Paul, áreas analíticas, costura de Möbius, geodésicas, rutas, difusión y energía modal. También se prueban ejemplos, persistencia, compatibilidad de proyectos, tablas, exportaciones y los dibujos/fórmulas de los 30 modelos.
 
-El flujo de Windows construye el `.exe` y ejecuta la aplicación empaquetada con los 23 modelos, comprobando Qt, cálculos, figuras y capturas en modo `offscreen`. Guarda `verification.json`, capturas y versiones de dependencias en el artefacto.
+El flujo de Windows construye el `.exe` y ejecuta la aplicación empaquetada con los 30 modelos, comprobando Qt, cálculos, figuras y capturas en modo `offscreen`. Guarda `verification.json`, capturas y versiones de dependencias en el artefacto.
 
 ## Estructura
 
@@ -129,6 +147,7 @@ El flujo de Windows construye el `.exe` y ejecuta la aplicación empaquetada con
 | `advanced_models.py` | Mecánica adicional, caos, partículas y barrera cuántica |
 | `particle_simulator.py` | Gas elástico y N cuerpos con fuerzas mutuas |
 | `dynamic_systems.py` | Sistemas ampliados, condiciones vecinas, campos y barridos |
+| `spatial_models.py`, `graph_models.py` | Compton, Paul, geometría y dinámica de grafos |
 | `particle_data.py` | Propiedades de referencia y conversiones de unidades |
 | `experiments.py` | Configuración validada, persistencia y resultados |
 | `plotting.py` | Escenas 3D, análisis y fórmulas |

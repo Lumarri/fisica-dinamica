@@ -33,7 +33,11 @@ class Dashboard(QWidget):
         box.addLayout(families)
         heading=QLabel('Experimentos destacados');heading.setObjectName('cardTitle');box.addWidget(heading)
         grid=QGridLayout();grid.setSpacing(13)
-        highlights=[('gas_dilute','Un gas en movimiento','Esferas, choques elásticos, energía y presión en 3D.'),
+        highlights=[('surface_mobius','Una banda con media vuelta','Superficies, mallas y área en tres dimensiones.'),
+                    ('graph_heat_grid','Transporte en una red 3D','Laplaciano, difusión y conservación por componentes.'),
+                    ('compton_right','Un fotón y un electrón','Dispersión Compton y conservación relativista.'),
+                    ('graph_small_world','Conectividad y caminos','Topologías, rutas mínimas y espectro de grafos.'),
+                    ('gas_dilute','Un gas en movimiento','Esferas, choques elásticos, energía y presión en 3D.'),
                     ('gravity_disk','Partículas que interactúan','Fuerzas mutuas, conservación y comparación de pasos.'),
                     ('rossler_classic','Explorar sistemas dinámicos','Atractores, condiciones vecinas y barridos de parámetros.'),
                     ('kuramoto_sync','Sincronización colectiva','Fases acopladas y parámetro de orden de Kuramoto.'),

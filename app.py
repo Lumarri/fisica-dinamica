@@ -19,7 +19,7 @@ def smoke_test(app, directory):
     window = MainWindow(auto_run=False)
     window.resize(1460,940)
     window.show()
-    report = {'status': 'failed', 'models': [], 'examples': len(EXAMPLES), 'edition': '2.1'}
+    report = {'status': 'failed', 'models': [], 'examples': len(EXAMPLES), 'edition': '2.2'}
     try:
         from PySide6.QtGui import QFont,QFontInfo
         report['font_families']={'interface':QFontInfo(app.font()).family(),
@@ -42,14 +42,14 @@ def smoke_test(app, directory):
             if not window.grab().save(str(directory / f'{model}.png')):
                 raise RuntimeError('No se pudo guardar la captura de verificación.')
             report['models'].append(model)
-        for section in ['simulador','dinamicos','modelos','particulas','resultados','cuaderno']:
+        for section in ['simulador','dinamicos','geometria','modelos','particulas','resultados','cuaderno']:
             window.navigate_section(section)
-            if section in {'simulador','dinamicos'} and window.dirty:
+            if section in {'simulador','dinamicos','geometria'} and window.dirty:
                 window.accept_result(run_experiment(window.collect_config()))
                 window.timeline.setValue(len(window.result.t)//2)
             app.processEvents()
             if not window.grab().save(str(directory/f'{section}.png')):raise RuntimeError('No se pudo guardar la sección '+section)
-        report['sections']=['inicio','laboratorio','simulador','dinamicos','modelos','particulas','resultados','cuaderno']
+        report['sections']=['inicio','laboratorio','simulador','dinamicos','geometria','modelos','particulas','resultados','cuaderno']
         report['theme']='Neumorfismo oscuro · azul marino'
         report['typography']=['Space Grotesk','Computer Modern']
         report['status'] = 'passed'

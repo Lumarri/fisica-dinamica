@@ -67,6 +67,10 @@ def energy_drift(energy):
 
 
 def validate_model(model, p, config):
+    from spatial_models import SPATIAL_MODELS, validate_spatial
+    from graph_models import GRAPH_MODELS, validate_graph
+    if model in SPATIAL_MODELS:validate_spatial(model,p,config)
+    if model in GRAPH_MODELS:validate_graph(model,p,config)
     from particle_simulator import PARTICLE_MODELS, validate_particles
     from dynamic_systems import DYNAMIC_MODELS, validate_dynamics
     if model in PARTICLE_MODELS: validate_particles(model,p,config)
@@ -503,4 +507,8 @@ def run_advanced(config):
     from dynamic_systems import DYNAMIC_MODELS, run_dynamics
     if config.model in PARTICLE_MODELS:return run_particles(config,parameters)
     if config.model in DYNAMIC_MODELS:return run_dynamics(config,parameters)
+    from spatial_models import SPATIAL_MODELS, run_spatial
+    from graph_models import GRAPH_MODELS, run_graph
+    if config.model in SPATIAL_MODELS:return run_spatial(config,parameters)
+    if config.model in GRAPH_MODELS:return run_graph(config,parameters)
     return RUNNERS[config.model](config,parameters)

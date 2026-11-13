@@ -67,7 +67,7 @@ class DesktopTests(unittest.TestCase):
                 self.assertTrue(self.window.csv_button.isEnabled())
                 self.assertFalse(self.window.dirty)
                 self.window.timeline.setValue(100)
-                prefix='n = ' if model in {'logistic','henon'} else 'x = ' if model=='quantum_barrier' else 't = '
+                prefix='n = ' if model in {'logistic','henon'} else 'x = ' if model=='quantum_barrier' else 'u = ' if model=='surface' else 'paso = ' if model=='graph_routes' else 't = '
                 self.assertIn(prefix, self.window.time_label.text())
 
     def test_background_simulation_from_run_button(self):
@@ -154,9 +154,9 @@ class DesktopTests(unittest.TestCase):
         self.assertEqual(restored.duration,c.duration)
         self.assertEqual(restored.parameters['half_life'],c.parameters['half_life'])
 
-    def test_eight_sections_and_compact_window_navigation(self):
+    def test_nine_sections_and_compact_window_navigation(self):
         self.assertEqual(self.window.active_section,'inicio')
-        expected={'inicio':7,'laboratorio':0,'simulador':0,'dinamicos':0,'modelos':4,'particulas':5,'resultados':3,'cuaderno':6}
+        expected={'inicio':7,'laboratorio':0,'simulador':0,'dinamicos':0,'geometria':0,'modelos':4,'particulas':5,'resultados':3,'cuaderno':6}
         self.assertEqual(len(self.window.nav_buttons),len(expected))
         self.window.resize(1000,720)
         for section,index in expected.items():
@@ -194,6 +194,24 @@ class DesktopTests(unittest.TestCase):
         self.assertEqual(self.window.model_selector.currentData(),'rossler')
         self.window.navigate_section('simulador')
         self.assertEqual(self.window.collect_config().parameters['bodies'],12)
+
+    def test_mesh_visibility_graph_edges_labels_and_color_animation(self):
+        c=ExperimentConfig(model='surface',duration=1,solver=SolverSettings(points=200))
+        self.window.apply_config(c);self.window.accept_result(run_experiment(c))
+        self.assertEqual(self.window.active_section,'geometria')
+        self.assertEqual(len(self.window.scene.geometry_artists),2)
+        self.window.geometry_check.setChecked(False)
+        self.assertFalse(any(a.get_visible() for a in self.window.scene.geometry_artists))
+        c=ExperimentConfig(model='graph_waves',duration=1,solver=SolverSettings(points=200))
+        self.window.apply_config(c);self.window.accept_result(run_experiment(c))
+        self.window.geometry_check.setChecked(True);self.window.labels_check.setChecked(True)
+        self.window.timeline.setValue(100);self.window.scene.draw()
+        scene=self.window.scene
+        self.assertTrue(all(a.get_visible() for a in scene.node_labels))
+        np.testing.assert_allclose(scene.particle_artist.get_array(),self.window.result.states[100,:32])
+        expected=scene.particle_positions[100][scene.graph_edges]
+        np.testing.assert_allclose(scene.edge_artist._segments3d,expected)
+        self.assertEqual(len(scene.node_labels),32)
 
     def test_neumorphic_slider_accepts_mouse_and_keyboard(self):
         self.window.navigate_section('laboratorio');self.app.processEvents()

@@ -1,7 +1,7 @@
 # Guía de modelos y ejemplos · DYNAMIS 2
 
 Esta guía acompaña a las pestañas **Fórmulas y precisión**, **Datos** y **Modelos y ejemplos** del programa.
-Incluye 23 modelos y 52 proyectos de ejemplo. El catálogo de referencia contiene 28 especies de partículas.
+Incluye 30 modelos y 68 proyectos de ejemplo. El catálogo de referencia contiene 28 especies de partículas.
 
 ## Uso de las unidades y de la precisión
 
@@ -1310,8 +1310,428 @@ $$\dot{\theta}_i=\omega_i+KR\sin(\psi-\theta_i)$$
 - [Kuramoto · Scholarpedia](http://www.scholarpedia.org/article/Kuramoto_model)
 - [SciPy · solve_ivp y DOP853](https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html)
 
+## 24. Dispersión Compton 3D
+
+**Área:** Simuladores de partículas.
+
+Fotón sobre electrón libre: retroceso relativista, cuatro-momento y sección eficaz de Klein–Nishina.
+
+**Escena:** Evento en t=0. Azul: fotón; ámbar: electrón. Fotón incidente hacia +Z; después se muestran el fotón dispersado y el electrón de retroceso. Las líneas son trayectorias libres fuera del evento.
+
+**Duración:** 2.0 ns por defecto; rango 0.1 a 20.
+
+| Campo | Unidad | Valor por defecto | Rango / opciones | Significado |
+| --- | --- | --- | --- | --- |
+| Energía del fotón incidente | MeV | 0.5 | 0.001 a 10 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Ángulo polar de dispersión | ° | 60.0 | 0 a 180 | Ángulo de la hija 1 en el marco de reposo respecto a la dirección del boost +Z. |
+| Azimut de dispersión | ° | 30.0 | -180 a 180 | Azimut de la hija 1 en el marco de reposo; la hija 2 lleva momento opuesto. |
+
+### Supuestos
+
+- Electrón libre inicialmente en reposo; un solo evento de dispersión.
+- Fotón no polarizado; no hay electrones ligados, múltiples dispersiones ni creación de pares.
+
+### Preguntas para investigar
+
+- Compara 0°, 90° y 180°: ¿cuánta energía gana el electrón?
+- Comprueba la conservación de energía y momento con la tabla de cuatro-momentos.
+
+### Ecuaciones
+
+Energía del fotón dispersado:
+
+$$E^\prime=E/[1+(E/m_ec^2)(1-\cos\theta)]$$
+
+Energía cinética del electrón:
+
+$$K_e=E-E^\prime$$
+
+Momento de retroceso:
+
+$$\mathbf{p}_e=\mathbf{p}_\gamma-\mathbf{p}_\gamma^\prime$$
+
+Klein–Nishina; k=E′/E, fotón no polarizado:
+
+$$\frac{d\sigma}{d\Omega}=\frac{r_e^2}{2}k^2(k+k^{-1}-\sin^2\theta)$$
+
+### Ejemplos
+
+- [Compton: dispersión a 90°](../examples/compton_right.json): El fotón pierde energía y el electrón retrocede conservando cuatro-momento.
+- [Compton: retrodispersión](../examples/compton_back.json): A 180° la transferencia de energía al electrón es máxima para esa energía incidente.
+
+### Referencias
+
+- [OpenStax · Relatividad y cuántica](https://openstax.org/details/books/university-physics-volume-3)
+- [NIST · constantes CODATA](https://physics.nist.gov/cuu/Constants/)
+
+## 25. Trampa de Paul: campo RF 3D
+
+**Área:** Simuladores de partículas.
+
+Confinamiento cuadrupolar ideal, micromovimiento, ecuaciones de Mathieu y trabajo de la fuente.
+
+**Escena:** Posición en unidades reducidas. Es un campo cuadrupolar ideal; no se dibujan electrodos ni colisiones.
+
+**Duración:** 30.0 uT por defecto; rango 0.5 a 80.
+
+| Campo | Unidad | Valor por defecto | Rango / opciones | Significado |
+| --- | --- | --- | --- | --- |
+| Coeficiente estático a | adimensional | 0.0 | -0.4 a 0.4 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Coeficiente RF q | adimensional | 0.25 | 0 a 1.2 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Frecuencia RF Ω | rad/uT | 3.0 | 0.2 a 12 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Posición inicial x | uL | 1.0 | -3 a 3 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Posición inicial y | uL | 0.6 | -3 a 3 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Posición inicial z | uL | 0.4 | -3 a 3 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Velocidad inicial x | uL/uT | 0.0 | -2 a 2 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Velocidad inicial y | uL/uT | 0.0 | -2 a 2 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Velocidad inicial z | uL/uT | 0.0 | -2 a 2 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+
+### Supuestos
+
+- Coeficientes (ax,ay,az)=a(1,1,−2) y (qx,qy,qz)=q(1,1,−2), compatibles con Laplace.
+- Unidades reducidas; a y q incorporan carga, masa, voltajes y escala geométrica.
+- Acotación a tiempo finito no demuestra estabilidad asintótica. La fuente RF realiza trabajo.
+
+### Preguntas para investigar
+
+- Compara q=0.25 y q=0.8; observa los distintos ejes.
+- Aumenta puntos de salida y compara el residuo de trabajo con la diferencia refinada del integrador.
+
+### Ecuaciones
+
+Ecuaciones de Mathieu:
+
+$$\ddot{x}_i+\frac{\Omega^2}{4}[a_i-2q_i\cos(\Omega t)]x_i=0$$
+
+Potencial cuadrupolar específico:
+
+$$U/m=\frac{\Omega^2}{8}\sum_i[a_i-2q_i\cos(\Omega t)]x_i^2$$
+
+Condición de Laplace:
+
+$$\sum_i a_i=\sum_i q_i=0$$
+
+Trabajo de la fuente; energía específica variable:
+
+$$E(t)-E(0)=\int_0^t\partial_t U\,dt$$
+
+### Ejemplos
+
+- [Paul: micromovimiento confinado](../examples/paul_confined.json): Los ejes muestran movimiento lento y RF superpuestos en este intervalo.
+- [Paul: sin campo](../examples/paul_free.json): Con a=q=0 se recupera movimiento rectilíneo uniforme.
+
+### Referencias
+
+- [Nobel · Paul y las trampas de iones](https://www.nobelprize.org/prizes/physics/1989/paul/lecture/)
+- [SciPy · solve_ivp y DOP853](https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html)
+
+## 26. Superficies paramétricas 3D
+
+**Área:** Geometría 3D.
+
+Esfera, toro, banda de Möbius y paraboloide hiperbólico; malla, área y comparación de resolución.
+
+**Escena:** Malla geométrica en unidades de longitud reducidas. El cursor recorre una fila paramétrica, sin significado de tiempo físico.
+
+**Variable de salida:** parámetro. No se impone una duración temporal.
+
+| Campo | Unidad | Valor por defecto | Rango / opciones | Significado |
+| --- | --- | --- | --- | --- |
+| Superficie | adimensional | Toro | Esfera, Toro, Banda de Möbius, Paraboloide hiperbólico | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Radio / escala R | uL | 1.5 | 0.2 a 5 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Radio menor / semianchura r | uL | 0.45 | 0.02 a 2 | Afecta al toro o a Möbius, no a esfera/paraboloide. |
+| Coeficiente del paraboloide | 1/uL | 0.5 | -2 a 2 | Solo paraboloide: z=κ(x²−y²). |
+| Muestras por parámetro | adimensional | 49 | 17 a 97 | La comparación usa 2N−1 muestras por eje. |
+
+### Supuestos
+
+- Área estimada por triangulación de la malla; no es un área exacta.
+- Las costuras repiten vértices; Möbius identifica extremos invirtiendo el parámetro transversal.
+
+### Preguntas para investigar
+
+- Compara el área de esfera/toro con la referencia analítica.
+- ¿Cómo cambia la diferencia de área al duplicar aproximadamente la resolución?
+- Observa cómo se cierra Möbius con media vuelta.
+
+### Ecuaciones
+
+Superficie paramétrica:
+
+$$\mathbf{r}=\mathbf{r}(u,v)$$
+
+Área de una parametrización regular:
+
+$$A=\int\!\int |\partial_u\mathbf{r}\times\partial_v\mathbf{r}|\,du\,dv$$
+
+Referencia de esfera:
+
+$$A_{\rm esfera}=4\pi R^2$$
+
+Referencia de toro regular:
+
+$$A_{\rm toro}=4\pi^2Rr,\quad R>r$$
+
+### Ejemplos
+
+- [Toro: área y resolución](../examples/surface_torus.json): El área triangulada se aproxima a 4π²Rr.
+- [Esfera: área analítica](../examples/surface_sphere.json): El área de la malla se aproxima a 4πR².
+- [Möbius: media vuelta](../examples/surface_mobius.json): La banda se cierra invirtiendo el parámetro transversal.
+- [Paraboloide: curvaturas opuestas](../examples/surface_saddle.json): Las secciones x y y se curvan en sentidos contrarios.
+
+### Referencias
+
+- [MathWorld · geometría diferencial](https://mathworld.wolfram.com/DifferentialGeometry.html)
+
+## 27. Geodésicas sobre una esfera
+
+**Área:** Geometría 3D.
+
+Círculo máximo por latitud, longitud y rumbo; arco, cuerda y restricción esférica.
+
+**Escena:** Trayectoria analítica sobre la esfera. El arco puede dar varias vueltas y dejar de ser el camino mínimo entre extremos.
+
+**Duración:** 12.0 uT por defecto; rango 0.5 a 80.
+
+| Campo | Unidad | Valor por defecto | Rango / opciones | Significado |
+| --- | --- | --- | --- | --- |
+| Radio de esfera R | uL | 1.5 | 0.1 a 5 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Latitud inicial | ° | 20.0 | -89 a 89 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Longitud inicial | ° | -40.0 | -180 a 180 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Rumbo desde el norte | ° | 65.0 | -180 a 180 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Rapidez angular | rad/uT | 0.4 | 0.01 a 3 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+
+### Supuestos
+
+- Esfera ideal de radio constante y velocidad angular uniforme.
+- La curva es una geodésica; solo arcos de ángulo ≤ π minimizan entre sus extremos.
+
+### Preguntas para investigar
+
+- Compara longitud de arco y cuerda tras media vuelta.
+- Cambia el rumbo inicial y observa distintos círculos máximos.
+
+### Ecuaciones
+
+Base ortonormal de posición y tangente inicial:
+
+$$\mathbf{r}(t)=R[\mathbf{n}_0\cos\omega t+\mathbf{v}_0\sin\omega t]$$
+
+Aceleración normal: geodésica:
+
+$$|\mathbf{r}|=R,\quad \ddot{\mathbf{r}}=-\omega^2\mathbf{r}$$
+
+Arco acumulado:
+
+$$s=R\omega t$$
+
+Cuerda desde el punto inicial:
+
+$$d=2R|\sin(\omega t/2)|$$
+
+### Ejemplos
+
+- [Geodésica: rumbo oblicuo](../examples/geodesic_oblique.json): La trayectoria permanece en la esfera; compara arco y cuerda.
+- [Geodésica: vuelta por el ecuador](../examples/geodesic_equator.json): Con latitud 0 y rumbo 90° la curva permanece en el ecuador.
+
+### Referencias
+
+- [MathWorld · geometría diferencial](https://mathworld.wolfram.com/DifferentialGeometry.html)
+
+## 28. Grafos 3D: conectividad y rutas
+
+**Área:** Grafos y redes.
+
+Cuatro topologías reproducibles, grados, componentes, agrupamiento, Laplaciano y rutas mínimas.
+
+**Escena:** Nodos y aristas de un grafo abstracto; la ruta amarilla usa los costes elegidos. El cursor visita sus nodos. Cruces de aristas no crean conexiones.
+
+**Variable de salida:** paso de ruta. No se impone una duración temporal.
+
+| Campo | Unidad | Valor por defecto | Rango / opciones | Significado |
+| --- | --- | --- | --- | --- |
+| Número de nodos | adimensional | 32 | 6 a 80 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Topología | adimensional | Mundo pequeño | Mundo pequeño, Erdős–Rényi, Grafo geométrico, Retícula 3D | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Pesos de la red | adimensional | Unitarios | Unitarios, Longitud: coste / resistencia | Coste reducido c=ℓ/uL; pesos para difusión y oscilaciones = 1/c. En modo unitario ambos valen 1. |
+| Probabilidad de enlace / reconexión | adimensional | 0.15 | 0 a 1 | Erdős–Rényi: probabilidad de cada arista. Mundo pequeño: probabilidad de reconectar. |
+| Vecinos por lado en el anillo | adimensional | 2 | 1 a 6 | Solo mundo pequeño; requiere 2k < N. |
+| Radio de enlace geométrico | uL | 0.9 | 0.1 a 3.5 | Solo grafo geométrico; conecta pares más cercanos que el radio. |
+| Nodo de origen / excitación | desde 1 | 1 | 1 a 80 | Nodo que inicia ruta, calor o desplazamiento. |
+| Destino (0 = último nodo) | adimensional | 0 | 0 a 80 | Solo rutas; no modifica el grafo. |
+
+### Supuestos
+
+- Grafo simple no dirigido, sin autoaristas, con semilla reproducible.
+- Las intersecciones de líneas no crean nodos. Las coordenadas son una incrustación 3D.
+- Las redes desconectadas se conservan; no se añaden enlaces para forzar una ruta.
+
+### Preguntas para investigar
+
+- Compara coste por número de aristas y por longitud.
+- Usa Erdős–Rényi con p=0: ¿por qué no existe una ruta entre nodos distintos?
+
+### Ecuaciones
+
+Grado no ponderado:
+
+$$d_i=\sum_j A_{ij}$$
+
+Laplaciano simétrico ponderado:
+
+$$L=D_W-W$$
+
+Agrupamiento local; cero si di<2:
+
+$$C_i=(A^3)_{ii}/[d_i(d_i-1)]$$
+
+Dijkstra minimiza coste de ruta, no distancia en pantalla:
+
+$$\ell(P)=\sum_{(i,j)\in P}c_{ij}$$
+
+### Ejemplos
+
+- [Grafo: atajos y ruta mínima](../examples/graph_small_world.json): Las reconexiones cambian rutas y agrupamiento manteniendo el número de aristas.
+- [Grafo: nodos aislados](../examples/graph_disconnected.json): Con p=0 cada nodo es una componente y no hay ruta entre nodos distintos.
+
+### Referencias
+
+- [SciPy · grafos dispersos](https://docs.scipy.org/doc/scipy/reference/sparse.csgraph.html)
+
+## 29. Difusión sobre grafos
+
+**Área:** Grafos y redes.
+
+Difusión continua y conservativa, evolución por color y equilibrio por componentes.
+
+**Escena:** Color = cantidad difundida, con escala fija durante la reproducción. Las aristas son conexiones de intercambio, no tuberías físicas.
+
+**Duración:** 8.0 uT por defecto; rango 0.1 a 80.
+
+| Campo | Unidad | Valor por defecto | Rango / opciones | Significado |
+| --- | --- | --- | --- | --- |
+| Número de nodos | adimensional | 32 | 6 a 80 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Topología | adimensional | Mundo pequeño | Mundo pequeño, Erdős–Rényi, Grafo geométrico, Retícula 3D | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Pesos de la red | adimensional | Unitarios | Unitarios, Longitud: coste / resistencia | Coste reducido c=ℓ/uL; pesos para difusión y oscilaciones = 1/c. En modo unitario ambos valen 1. |
+| Probabilidad de enlace / reconexión | adimensional | 0.15 | 0 a 1 | Erdős–Rényi: probabilidad de cada arista. Mundo pequeño: probabilidad de reconectar. |
+| Vecinos por lado en el anillo | adimensional | 2 | 1 a 6 | Solo mundo pequeño; requiere 2k < N. |
+| Radio de enlace geométrico | uL | 0.9 | 0.1 a 3.5 | Solo grafo geométrico; conecta pares más cercanos que el radio. |
+| Nodo de origen / excitación | desde 1 | 1 | 1 a 80 | Nodo que inicia ruta, calor o desplazamiento. |
+| Destino (0 = último nodo) | adimensional | 0 | 0 a 80 | Solo rutas; no modifica el grafo. |
+| Tasa de difusión D | 1/uT | 0.6 | 0.01 a 5 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Cantidad inicial en origen | uH | 1.0 | 0.01 a 10 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+
+### Supuestos
+
+- Grafo simple no dirigido, sin autoaristas, con semilla reproducible.
+- Las intersecciones de líneas no crean nodos. Las coordenadas son una incrustación 3D.
+- Las redes desconectadas se conservan; no se añaden enlaces para forzar una ruta.
+- Capacidad unitaria por nodo; cantidades en unidades abstractas uH.
+- Cada componente tiene su propia media de equilibrio.
+
+### Preguntas para investigar
+
+- Verifica la conservación de la cantidad total.
+- Compara una red conectada con nodos aislados.
+
+### Ecuaciones
+
+Difusión en la red:
+
+$$\dot{\mathbf{T}}=-DL\mathbf{T}$$
+
+Solución espectral del Laplaciano simétrico:
+
+$$\mathbf{T}(t)=V e^{-Dt\Lambda}V^T\mathbf{T}(0)$$
+
+Conservación de cantidad total:
+
+$$\frac{d}{dt}\sum_i T_i=0$$
+
+Media en cada componente conexa:
+
+$$T_{i,\infty}=|C|^{-1}\sum_{j\in C}T_j(0),\ i\in C$$
+
+### Ejemplos
+
+- [Difusión: retícula 3D](../examples/graph_heat_grid.json): La cantidad inicial se distribuye conservando su suma.
+- [Difusión: sin conexiones](../examples/graph_heat_isolated.json): Sin enlaces la cantidad permanece en el origen.
+
+### Referencias
+
+- [SciPy · grafos dispersos](https://docs.scipy.org/doc/scipy/reference/sparse.csgraph.html)
+
+## 30. Red de osciladores y modos
+
+**Área:** Grafos y redes.
+
+Vibración escalar acoplada por el grafo, disipación, energía y frecuencias normales.
+
+**Escena:** Cada nodo representa un oscilador escalar y se desplaza en Z para visualizar su amplitud. La conectividad se mantiene; las líneas no son resortes centrales geométricos.
+
+**Duración:** 15.0 uT por defecto; rango 0.5 a 60.
+
+| Campo | Unidad | Valor por defecto | Rango / opciones | Significado |
+| --- | --- | --- | --- | --- |
+| Número de nodos | adimensional | 32 | 6 a 80 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Topología | adimensional | Mundo pequeño | Mundo pequeño, Erdős–Rényi, Grafo geométrico, Retícula 3D | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Pesos de la red | adimensional | Unitarios | Unitarios, Longitud: coste / resistencia | Coste reducido c=ℓ/uL; pesos para difusión y oscilaciones = 1/c. En modo unitario ambos valen 1. |
+| Probabilidad de enlace / reconexión | adimensional | 0.15 | 0 a 1 | Erdős–Rényi: probabilidad de cada arista. Mundo pequeño: probabilidad de reconectar. |
+| Vecinos por lado en el anillo | adimensional | 2 | 1 a 6 | Solo mundo pequeño; requiere 2k < N. |
+| Radio de enlace geométrico | uL | 0.9 | 0.1 a 3.5 | Solo grafo geométrico; conecta pares más cercanos que el radio. |
+| Nodo de origen / excitación | desde 1 | 1 | 1 a 80 | Nodo que inicia ruta, calor o desplazamiento. |
+| Destino (0 = último nodo) | adimensional | 0 | 0 a 80 | Solo rutas; no modifica el grafo. |
+| Masa por nodo m | uM | 1.0 | 0.1 a 5 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Rigidez al equilibrio k₀ | uM/uT² | 0.2 | 0 a 5 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Acoplamiento k | uM/uT² | 1.0 | 0.01 a 5 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Amortiguamiento b | uM/uT | 0.03 | 0 a 2 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+| Desplazamiento inicial en origen | uL | 0.6 | 0.01 a 2 | Parámetro de la ecuación; su unidad y dominio figuran en este campo y en las fórmulas. |
+
+### Supuestos
+
+- Grafo simple no dirigido, sin autoaristas, con semilla reproducible.
+- Las intersecciones de líneas no crean nodos. Las coordenadas son una incrustación 3D.
+- Las redes desconectadas se conservan; no se añaden enlaces para forzar una ruta.
+- Potencial cuadrático en diferencias de desplazamiento; masas iguales.
+- Frecuencias modales calculadas sin amortiguamiento. uE=uM·uL²/uT².
+
+### Preguntas para investigar
+
+- Con b=0 comprueba la conservación de energía.
+- ¿Cómo cambia el espectro al reconectar el anillo?
+
+### Ecuaciones
+
+Ecuación de la red escalar:
+
+$$m\ddot{\mathbf{x}}+b\dot{\mathbf{x}}+(k_0 I+kL)\mathbf{x}=0$$
+
+Energía de la red:
+
+$$E=\frac{m}{2}\sum_i\dot{x}_i^2+\frac{k_0}{2}\sum_i x_i^2+\frac{k}{2}\mathbf{x}^TL\mathbf{x}$$
+
+Disipación viscosa:
+
+$$\dot{E}=-b\sum_i\dot{x}_i^2$$
+
+Frecuencias normales sin amortiguamiento:
+
+$$\omega_j=\sqrt{(k_0+k\lambda_j)/m}$$
+
+### Ejemplos
+
+- [Red: energía conservada](../examples/graph_waves_free.json): Con amortiguamiento nulo se conserva la energía.
+- [Red: vibraciones disipativas](../examples/graph_waves_damped.json): La energía decrece por el amortiguamiento viscoso.
+
+### Referencias
+
+- [SciPy · grafos dispersos](https://docs.scipy.org/doc/scipy/reference/sparse.csgraph.html)
+- [SciPy · solve_ivp y DOP853](https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html)
+
 ## Condiciones adicionales y lectura de diagnósticos
 
+- **Escenarios 3D:** Compton es cinemática de un evento con electrón libre inicialmente en reposo. Paul usa un cuadrupolo de Mathieu ideal con energía variable por trabajo RF; su balance de trabajo depende del muestreo de salida.
+- **Geometría:** el cursor de superficies recorre un parámetro, no tiempo físico. Áreas por triangulación con comparación de mallas. Las geodésicas pueden dar varias vueltas y solo arcos de ángulo ≤ π son mínimos entre extremos.
+- **Grafos:** índices desde 1, destino 0 significa último nodo. Los cruces no crean nodos. Sin ruta, las distancias son NA en el conjunto auxiliar. Coste por longitud y peso de acoplamiento inverso; o ambos unitarios. La difusión conserva cantidad por componente y la vibración usa desplazamientos escalares, no resortes centrales geométricos.
 - **Gas 3D:** hasta 96 esferas, radio < L/6 y volumen ocupado ≤ 8 %. El paso limita cada desplazamiento a 0.3r. Los contactos se corrigen tras el avance, con dos pasadas por pares; compara observables al reducir Δt. Presión = impulso acumulado/(6L²t). La energía conservada no garantiza exactitud de tiempos de choque.
 - **N cuerpos:** hasta 128 partículas, potencial suavizado y fronteras abiertas. Se controla Δt·ω ≤ 0.5 con una escala conservadora de la fuerza. Conservación de energía, momento y momento angular; comparación de posiciones a Δt/2. No hay colisiones, fusiones ni radiación. Las unidades son reducidas y no hay conversión SI automática.
 - **Sistemas ampliados:** Rössler, Van der Pol, Lotka–Volterra, SIR, Hénon y Kuramoto incluyen condiciones vecinas y barrido de un parámetro. Cada valor se inicia de forma independiente; los extremos son muestreados en un horizonte finito. Los escapes/fallos se marcan NaN en el CSV. La distancia de estados no es un exponente de Lyapunov.

@@ -53,10 +53,17 @@ class SceneCanvas(PlotCanvas):
         self.marker = None
         self.plane_artists = []
         self.planes_visible = True
+        self.geometry_visible=True
+        self.labels_visible=False
         self.link_artist = None
         self.extra_markers = []
         self.particle_artist = None
         self.particle_trails = []
+        self.geometry_artists=[]
+        self.edge_artist=None
+        self.node_labels=[]
+        self.focus_marker=None
+        self.node_values=None
 
     def draw_result(self, result):
         self.figure.clear()
@@ -68,6 +75,11 @@ class SceneCanvas(PlotCanvas):
         self.extra_markers = []
         self.particle_artist = None
         self.particle_trails = []
+        self.geometry_artists=[]
+        self.edge_artist=None
+        self.node_labels=[]
+        self.focus_marker=None
+        self.node_values=None
         if 'visual' in result.extra and 'particles' in result.extra['visual']:
             self._draw_particles(result.extra['visual']);return
         if 'visual' in result.extra:
@@ -122,8 +134,30 @@ class SceneCanvas(PlotCanvas):
         self.marker=None
         self.figure.text(.03,.96,visual['title'],fontsize=10,color=FG)
         colors=visual.get('particle_colors',np.arange(self.particle_positions.shape[1]))
+        self.node_values=visual.get('node_values')
         self.particle_artist=ax.scatter(*self.particle_positions[0].T,c=colors,cmap=LinearSegmentedColormap.from_list('charges',[CYAN,GOLD]) if visual.get('charge_colors') else NEO_CMAP,
                                        s=34,alpha=.95,edgecolors=FG,linewidths=.3)
+        if self.node_values is not None:
+            low,high=float(np.min(self.node_values)),float(np.max(self.node_values))
+            if high-low<1e-14:
+                if low>=0:low=0.;high=max(1.,high)
+                else:low-=.5;high+=.5
+            self.particle_artist.set_clim(low,high)
+            cax=self.figure.add_axes([.92,.28,.012,.38])
+            bar=self.figure.colorbar(self.particle_artist,cax=cax)
+            bar.ax.tick_params(colors=MUTED,labelsize=8,labelfontfamily='cmr10')
+            bar.set_label(visual.get('color_label','Valor'),color=MUTED,fontsize=8)
+        if 'edges' in visual:
+            self.graph_edges=visual['edges']
+            self.edge_artist=Line3DCollection(self.particle_positions[0][self.graph_edges],colors=BLUE,linewidths=.7,alpha=.5)
+            ax.add_collection3d(self.edge_artist)
+            highlighted=visual.get('highlight_edges')
+            if highlighted is not None and len(highlighted):ax.add_collection3d(Line3DCollection(self.particle_positions[0][highlighted],colors=GOLD,linewidths=2.4))
+            for i,pos in enumerate(self.particle_positions[0]):
+                label=ax.text(*pos,str(i+1),color=FG,fontsize=7);label.set_visible(self.labels_visible);self.node_labels.append(label)
+            self.focus_path=visual.get('focus_path',[])
+            if len(self.focus_path):
+                self.focus_marker,=ax.plot(*self.particle_positions[0,self.focus_path[0]].reshape(3,1),marker='o',markersize=9,markerfacecolor='none',markeredgecolor=GOLD)
         count=min(visual.get('trail_count',5),self.particle_positions.shape[1])
         for i in range(count):
             artist,=ax.plot([],[],[],lw=.8,alpha=.55,color=[CYAN,BLUE,GOLD][i%3])
@@ -147,6 +181,7 @@ class SceneCanvas(PlotCanvas):
         ax.xaxis.set_rotate_label(False);ax.yaxis.set_rotate_label(False)
         ax.set_xlabel(visual['labels'][0],labelpad=0,fontsize=9);ax.set_ylabel(visual['labels'][1],labelpad=0,fontsize=9)
         ax.tick_params(pad=0,labelsize=8)
+        self.show_geometry(self.geometry_visible)
         self._draw_planes(ranges);self.view('Perspectiva')
 
     def _draw_visual(self, visual, parameter):
@@ -155,6 +190,8 @@ class SceneCanvas(PlotCanvas):
         self.coordinates = coords
         self.figure.text(.03, .96, visual['title'], fontsize=10, color=FG)
         all_coords = [coords]
+        if 'mesh' in visual:
+            self._draw_mesh(visual['mesh']);all_coords.append(visual['mesh'].reshape(-1,3))
         for i, track in enumerate(visual.get('tracks', [])):
             points = track['xyz']
             color = [GOLD, BLUE, CYAN][i % 3]
@@ -180,7 +217,7 @@ class SceneCanvas(PlotCanvas):
             lo, hi = np.min(together[:,j]), np.max(together[:,j])
             margin=max((hi-lo)*.09, max(abs(lo),abs(hi))*.01, 1e-4)
             ranges.append((lo-margin,hi+margin))
-        spatial = self.result.config.model in {'pendulum','double_pendulum','projectile','orbit','em_particle','rutherford','two_body'}
+        spatial = visual.get('physical',False) or self.result.config.model in {'pendulum','double_pendulum','projectile','orbit','em_particle','rutherford','two_body'}
         if spatial:
             width=max(hi-lo for lo,hi in ranges)
             ranges=[((lo+hi-width)/2,(lo+hi+width)/2) for lo,hi in ranges]
@@ -188,9 +225,30 @@ class SceneCanvas(PlotCanvas):
         ax.set_xlabel(visual['labels'][0],labelpad=5);ax.set_ylabel(visual['labels'][1],labelpad=5)
         ax.set_zlabel(visual['labels'][2],labelpad=5)
         ax.set_box_aspect((1,1,1) if spatial else (1,1,.85),zoom=1.03)
+        if visual.get('physical'):
+            ax.xaxis.set_rotate_label(False);ax.yaxis.set_rotate_label(False)
+            ax.set_xlabel(visual['labels'][0],labelpad=0,fontsize=9);ax.set_ylabel(visual['labels'][1],labelpad=0,fontsize=9)
+            ax.tick_params(pad=0,labelsize=8)
         self._draw_planes(ranges)
         self.marker, = ax.plot(*coords[0].reshape(3,1),marker='o',markersize=6,color=CYAN,markeredgecolor=FG)
         self.view('Perspectiva')
+
+    def _draw_mesh(self, mesh):
+        x,y,z=mesh[:,:,0],mesh[:,:,1],mesh[:,:,2]
+        self.geometry_artists.append(self.ax.plot_surface(x,y,z,color=CYAN,alpha=.22,linewidth=0,rstride=1,cstride=1,shade=True))
+        self.geometry_artists.append(self.ax.plot_wireframe(x,y,z,color=BLUE,alpha=.28,linewidth=.45,rstride=max(1,len(x)//16),cstride=max(1,len(x)//16)))
+        self.show_geometry(self.geometry_visible)
+
+    def show_geometry(self,visible):
+        self.geometry_visible=visible
+        for artist in self.geometry_artists:artist.set_visible(visible)
+        if self.edge_artist is not None:self.edge_artist.set_visible(visible)
+        self.draw_idle()
+
+    def show_labels(self,visible):
+        self.labels_visible=visible
+        for label in self.node_labels:label.set_visible(visible)
+        self.draw_idle()
 
     def _draw_planes(self, ranges):
         x, y, z = [np.linspace(*r, 2) for r in ranges]
@@ -219,6 +277,12 @@ class SceneCanvas(PlotCanvas):
     def set_frame(self, index):
         if self.particle_artist is not None:
             self.particle_artist._offsets3d=tuple(self.particle_positions[index].T)
+            if self.node_values is not None:self.particle_artist.set_array(self.node_values[index])
+            if self.edge_artist is not None:self.edge_artist.set_segments(self.particle_positions[index][self.graph_edges])
+            for i,label in enumerate(self.node_labels):
+                point=self.particle_positions[index,i];label.set_position_3d(point)
+            if self.focus_marker is not None:
+                self.focus_marker.set_data_3d(*self.particle_positions[index,self.focus_path[min(index,len(self.focus_path)-1)]].reshape(3,1))
             for artist,i in self.particle_trails:
                 artist.set_data_3d(*self.particle_positions[max(0,index-75):index+1,i].T)
             self.draw_idle();return

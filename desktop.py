@@ -132,8 +132,8 @@ class MainWindow(QMainWindow):
     def _build_navigation(self):
         frame=NeoSurface();layout=QHBoxLayout(frame);layout.setContentsMargins(12,9,12,9);layout.setSpacing(7)
         self.nav_buttons={};self.nav_group=QButtonGroup(self)
-        for key,title in [('inicio','Inicio'),('laboratorio','Laboratorio'),('simulador','Partículas 3D'),('dinamicos','Dinámica'),('modelos','Modelos'),('particulas','Catálogo'),('resultados','Resultados'),('cuaderno','Cuaderno')]:
-            button=QPushButton(title);button.setCheckable(True);button.setStyleSheet('padding:7px 8px;')
+        for key,title in [('inicio','Inicio'),('laboratorio','Laboratorio'),('simulador','Partículas 3D'),('dinamicos','Dinámica'),('geometria','Geo / Grafos'),('modelos','Modelos'),('particulas','Catálogo'),('resultados','Resultados'),('cuaderno','Cuaderno')]:
+            button=QPushButton(title);button.setCheckable(True);button.setStyleSheet('padding:7px 8px;font-size:10px;');button.setProperty('compact',True)
             button.clicked.connect(lambda checked=False,name=key:self.navigate_section(name))
             self.nav_group.addButton(button);self.nav_buttons[key]=button;layout.addWidget(button,1)
         return frame
@@ -142,29 +142,30 @@ class MainWindow(QMainWindow):
     def workspace_for_model(model):
         if MODELS[model].family=='Simuladores de partículas':return 'simulador'
         if MODELS[model].family=='Caos y dinámica':return 'dinamicos'
+        if MODELS[model].family in {'Geometría 3D','Grafos y redes'}:return 'geometria'
         return 'laboratorio'
 
     def navigate_section(self,key):
-        indices={'inicio':7,'laboratorio':0,'simulador':0,'dinamicos':0,'modelos':4,'particulas':5,'resultados':3,'cuaderno':6}
+        indices={'inicio':7,'laboratorio':0,'simulador':0,'dinamicos':0,'geometria':0,'modelos':4,'particulas':5,'resultados':3,'cuaderno':6}
         if key not in indices:return
-        if key in {'laboratorio','simulador','dinamicos'}:
+        if key in {'laboratorio','simulador','dinamicos','geometria'}:
             current=self.workspace_for_model(self.model_selector.currentData())
             if current!=key:
                 if self.worker is not None:
                     self.statusBar().showMessage('Espera a que termine el cálculo para cambiar de simulador.',6000);return
                 try:self.workspace_configs[current]=self.collect_config()
                 except ValueError:pass
-                default={'laboratorio':'oscillator','simulador':'gas_box','dinamicos':'rossler'}[key]
+                default={'laboratorio':'oscillator','simulador':'gas_box','dinamicos':'rossler','geometria':'surface'}[key]
                 self.apply_config(self.workspace_configs.get(key,ExperimentConfig(model=default,duration=MODELS[default].duration)))
             self.lab_section=key
-        index=self.tabs.currentIndex() if key in {'laboratorio','simulador','dinamicos'} and self.tabs.currentIndex() in {0,1,2} else indices[key]
+        index=self.tabs.currentIndex() if key in {'laboratorio','simulador','dinamicos','geometria'} and self.tabs.currentIndex() in {0,1,2} else indices[key]
         self.tabs.setCurrentIndex(index);self._section_from_tab(index)
 
     def _section_from_tab(self,index):
         key={3:'resultados',4:'modelos',5:'particulas',6:'cuaderno',7:'inicio'}.get(index,self.lab_section)
         self.active_section=key
         for name,button in self.nav_buttons.items():button.setChecked(name==key)
-        lab=key in {'laboratorio','simulador','dinamicos'};context=lab or key=='resultados'
+        lab=key in {'laboratorio','simulador','dinamicos','geometria'};context=lab or key=='resultados'
         self.sidebar.setVisible(lab);self.tabs.tabBar().setVisible(lab)
         for widget in [self.workspace_eyebrow,self.experiment_label,*self.metrics]:widget.setVisible(context)
         self.workspace_title.setVisible(False)
@@ -173,7 +174,8 @@ class MainWindow(QMainWindow):
             self.content_splitter.setSizes([320,1100])
             self.workspace_eyebrow.setText({'laboratorio':'LABORATORIO / OBSERVAR · MEDIR · CONTRASTAR',
                 'simulador':'PARTÍCULAS 3D / INTERACCIONES · COLISIONES · CONSERVACIÓN',
-                'dinamicos':'SISTEMAS DINÁMICOS / FASES · SENSIBILIDAD · BARRIDOS'}[key])
+                'dinamicos':'SISTEMAS DINÁMICOS / FASES · SENSIBILIDAD · BARRIDOS',
+                'geometria':'GEOMETRÍA Y GRAFOS / SUPERFICIES · REDES · TRANSPORTE'}[key])
 
     def open_example(self,key):
         if self.worker is not None:
@@ -340,13 +342,17 @@ class MainWindow(QMainWindow):
         controls.addWidget(QLabel('Vista'))
         self.view_selector = QComboBox(); self.view_selector.addItems(['Perspectiva', 'Plano XY', 'Plano XZ', 'Plano YZ'])
         controls.addWidget(self.view_selector)
-        self.planes_check = QCheckBox('Planos de referencia'); self.planes_check.setChecked(True); controls.addWidget(self.planes_check)
+        self.planes_check = QCheckBox('Planos'); self.planes_check.setChecked(True); controls.addWidget(self.planes_check)
+        self.geometry_check=QCheckBox('Malla / red');self.geometry_check.setChecked(True);controls.addWidget(self.geometry_check)
+        self.labels_check=QCheckBox('Nodos');controls.addWidget(self.labels_check)
         controls.addStretch()
-        self.png_button = QPushButton('Exportar PNG'); self.png_button.clicked.connect(self.export_png); self.png_button.setEnabled(False); controls.addWidget(self.png_button)
+        self.png_button = QPushButton('PNG');self.png_button.setToolTip('Exportar figura PNG'); self.png_button.clicked.connect(self.export_png); self.png_button.setEnabled(False); controls.addWidget(self.png_button)
         scene_layout.addLayout(controls)
         self.scene = SceneCanvas(); scene_layout.addWidget(self.scene, 1)
         self.view_selector.currentTextChanged.connect(self.scene.view)
         self.planes_check.toggled.connect(self.scene.show_planes)
+        self.geometry_check.toggled.connect(self.scene.show_geometry)
+        self.labels_check.toggled.connect(self.scene.show_labels)
         toolbar = NavigationToolbar2QT(self.scene, scene_page); scene_layout.addWidget(toolbar)
         self.scene_note = QLabel('Arrastra para girar la escena. Rueda o herramientas de la figura para acercar.'); self.scene_note.setObjectName('muted'); self.scene_note.setWordWrap(True); scene_layout.addWidget(self.scene_note)
         timeline = QHBoxLayout()
@@ -368,7 +374,7 @@ class MainWindow(QMainWindow):
         for label,value in [('0.25×',.25),('0.5×',.5),('1×',1.),('2×',2.),('4×',4.)]:self.speed_selector.addItem(label,value)
         self.speed_selector.setCurrentIndex(2);playback.addWidget(self.speed_selector)
         self.loop_check=QCheckBox('Repetir');playback.addWidget(self.loop_check);playback.addStretch()
-        caption=QLabel('Reproducción de la simulación calculada');caption.setObjectName('muted');playback.addWidget(caption)
+        caption=QLabel('Reproducción de la simulación calculada');caption.setWordWrap(True);caption.setMaximumWidth(200);caption.setObjectName('muted');playback.addWidget(caption)
         scene_layout.addLayout(playback)
         self.tabs.addTab(scene_page, 'Escena 3D')
         analysis_page = QWidget(); analysis_layout = QVBoxLayout(analysis_page)
@@ -431,9 +437,9 @@ class MainWindow(QMainWindow):
         self.time_form.labelForField(self.fields['duration']).setText('Duración ('+spec.time_unit+')')
         self.time_help.setText('Tiempo de evolución en '+spec.time_unit+'.' if spec.timed else '')
         self.model_summary.setText(spec.summary)
-        self.seed_group.setVisible(model in {'ensemble','radioactive','gas_box','nbody','kuramoto'})
+        self.seed_group.setVisible(model in {'ensemble','radioactive','gas_box','nbody','kuramoto','graph_routes','graph_heat','graph_waves'})
         self.dynamic_group.setVisible(not legacy)
-        self.solver_group.setVisible(model not in {'logistic','henon'})
+        self.solver_group.setVisible(model not in {'logistic','henon','surface','graph_routes'})
         for key in ['rtol','atol','max_step']:
             self.solver_form.setRowVisible(self.fields[key], spec.numeric)
         self.solver_form.labelForField(self.fields['points']).setText('Puntos espaciales' if model == 'quantum_barrier' else 'Puntos de salida')
@@ -652,9 +658,11 @@ class MainWindow(QMainWindow):
             value=self.result.t[index]
             if model=='quantum_barrier':text=f'x = {value:.5g} nm'
             elif model in {'logistic','henon'}:text=f'n = {index}'
-            elif model in {'em_particle','two_body'}:text=f't = {value*1e9:.5g} ns'
+            elif model in {'em_particle','two_body','compton'}:text=f't = {value*1e9:.5g} ns'
             elif MODELS[model].time_unit=='adimensional':text=f't = {value:.5g}'
-            elif model=='nbody':text=f't = {value:.5g} uT'
+            elif model=='surface':text=f'u = {index}'
+            elif model=='graph_routes':text=f'paso = {index}'
+            elif MODELS[model].time_unit=='uT':text=f't = {value:.5g} uT'
             else:text=f't = {value:.5g} s'
             self.time_label.setText(text)
 

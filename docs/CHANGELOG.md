@@ -1,3 +1,21 @@
+# Dynamis 2.2.0
+
+Programa nativo para Windows x64: **30 modelos, 68 ejemplos y nueve secciones**.
+
+- Compton 3D: fotón, electrón, cuatro-momento y sección diferencial Klein–Nishina.
+- Trampa de Paul: campo cuadrupolar RF, Mathieu y balance con trabajo de la fuente.
+- Geometría: esfera, toro, Möbius y paraboloide paramétricos, área y refinamiento; geodésicas esféricas por rumbo.
+- Grafos: mundo pequeño, Erdős–Rényi, geométricos y retícula; rutas mínimas, componentes, grados y agrupamiento.
+- Difusión conservativa y osciladores sobre grafos, color animado, etiquetas, conectividad y modos normales.
+- Controles para malla/aristas, etiquetas de nodos y nueve secciones; se conserva el neumorfismo azul marino y Computer Modern.
+- Datos auxiliares exportables: cuatro-momentos, mallas, aristas/pesos, matrices, rutas, equilibrios y espectros.
+
+Descarga **Dynamis.exe**: incluye Python y bibliotecas, para Windows x64. El ejecutable no está firmado.
+
+65 pruebas de modelos e interfaz; la compilación verifica los 30 modelos, fuentes y figuras dentro del ejecutable. Los supuestos se detallan en la guía: Compton usa electrón libre en reposo, Paul es un cuadrupolo ideal, los barridos/mallas tienen resolución finita y las redes son modelos abstractos con unidades reducidas.
+
+---
+
 # Dynamis 2.1.0
 
 Programa nativo de física para **Windows x64**, con 23 modelos y 52 ejemplos guiados. Diseño neumórfico oscuro azul marino, Space Grotesk y fórmulas/números con tipografía Computer Modern.
